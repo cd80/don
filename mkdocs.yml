@@ -50,6 +50,7 @@ nav:
           - Sentiment Analysis: guides/sentiment-analysis.md
       - Optimization:
           - Performance Optimization: guides/performance-optimization.md
+          - Latency Optimization: guides/latency-optimization.md
 
 markdown_extensions:
   - admonition
