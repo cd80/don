@@ -23,8 +23,8 @@ A comprehensive cryptocurrency trading framework using reinforcement learning an
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/bitcoin_trading_rl.git
-cd bitcoin_trading_rl
+git clone https://github.com/cd80/don.git
+cd don
 ```
 
 2. Create a virtual environment:
@@ -155,28 +155,6 @@ Interactive examples are available in the `notebooks` directory:
 - [High-Frequency Trading Example](notebooks/high_frequency_trading_example.ipynb)
 - [Statistical Arbitrage Example](notebooks/statistical_arbitrage_example.ipynb)
 
-## Project Structure
-
-```
-bitcoin_trading_rl/
-├── configs/               # Configuration files
-├── data/                 # Data storage
-├── docs/                 # Documentation
-├── notebooks/           # Example notebooks
-├── results/             # Trading results
-├── scripts/             # Utility scripts
-├── src/                 # Source code
-│   ├── data/           # Data processing
-│   ├── evaluation/     # Performance evaluation
-│   ├── features/       # Feature engineering
-│   ├── models/         # ML models
-│   ├── strategies/     # Trading strategies
-│   ├── training/       # Model training
-│   ├── utils/          # Utilities
-│   └── visualization/  # Visualization tools
-└── tests/              # Unit tests
-```
-
 ## Development
 
 ### Running Tests
@@ -205,56 +183,18 @@ flake8 src/ tests/
 mypy src/
 ```
 
-## Deployment
-
-### Docker
-
-```bash
-# Build image
-docker build -t bitcoin_trading_rl .
-
-# Run container
-docker run -d \
-    --name bitcoin_trading \
-    -v $(pwd)/configs:/app/configs \
-    -v $(pwd)/data:/app/data \
-    bitcoin_trading_rl
-```
-
-### Production Setup
-
-1. Configure environment:
-
-```bash
-cp .env.production.example .env.production
-# Edit .env.production with your settings
-```
-
-2. Start services:
-
-```bash
-docker-compose -f docker-compose.prod.yml up -d
-```
-
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
 
 ## License
 
 This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
 
-## Acknowledgments
+## Author
 
-- Thanks to all contributors who have helped shape this project
-- Special thanks to the cryptocurrency trading community for valuable feedback
-- Built with support from various open-source libraries and tools
+- **Kim, Sungwoo** - [cd80](https://github.com/cd80)
+- Email: rkwk0112@gmail.com
 
 ## Status
 
@@ -262,8 +202,8 @@ See [PROJECT_STATUS.md](PROJECT_STATUS.md) for current development status and ro
 
 ## Contact
 
-- Project Link: https://github.com/yourusername/bitcoin_trading_rl
-- Documentation: https://yourusername.github.io/bitcoin_trading_rl
+- Project Link: https://github.com/cd80/don
+- Documentation: https://cd80.github.io/don
 
 ## Disclaimer
 

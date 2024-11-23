@@ -60,7 +60,7 @@ representative at an online or offline event.
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
 reported to the community leaders responsible for enforcement at
-conduct@bitcointradingrl.org.
+rkwk0112@gmail.com.
 All complaints will be reviewed and investigated promptly and fairly.
 
 All community leaders are obligated to respect the privacy and security of the
@@ -131,9 +131,8 @@ https://www.contributor-covenant.org/translations.
 
 For any questions or concerns regarding this Code of Conduct, please contact:
 
-- Email: conduct@bitcointradingrl.org
-- Discord: https://discord.gg/bitcointradingrl
-- GitHub Issues: https://github.com/yourusername/bitcoin_trading_rl/issues
+- Email: rkwk0112@gmail.com
+- GitHub: https://github.com/cd80/don/issues
 
 ## Acknowledgments
 
@@ -150,6 +149,8 @@ This Code of Conduct may be updated or amended as needed. Contributors will be n
 
 - GitHub repository announcements
 - Project newsletter
-- Discord announcements
+- Repository discussions
 
 The latest version will always be available in the repository's CODE_OF_CONDUCT.md file.
+
+Last updated: 2024-03-23

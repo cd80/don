@@ -24,14 +24,14 @@ This project adheres to a Code of Conduct that all contributors are expected to 
 2. Clone your fork:
 
 ```bash
-git clone https://github.com/yourusername/bitcoin_trading_rl.git
-cd bitcoin_trading_rl
+git clone https://github.com/yourusername/don.git
+cd don
 ```
 
 3. Add upstream remote:
 
 ```bash
-git remote add upstream https://github.com/originalowner/bitcoin_trading_rl.git
+git remote add upstream https://github.com/cd80/don.git
 ```
 
 4. Create a virtual environment:
@@ -284,7 +284,7 @@ Closes #123
 1. Check existing documentation
 2. Search issues
 3. Ask in discussions
-4. Join our Discord server
+4. Contact maintainers
 
 ### Reporting Issues
 
@@ -308,6 +308,13 @@ Contributors will be:
 2. Mentioned in release notes
 3. Recognized in documentation
 
+## Contact
+
+- **Maintainer**: Kim, Sungwoo
+- **Email**: rkwk0112@gmail.com
+- **GitHub**: [cd80](https://github.com/cd80)
+- **Project Repository**: https://github.com/cd80/don
+
 ## License
 
 By contributing, you agree that your contributions will be licensed under the project's MIT License.
@@ -316,9 +323,7 @@ By contributing, you agree that your contributions will be licensed under the pr
 
 Feel free to:
 
-- Open an issue
-- Start a discussion
-- Join our Discord server
-- Contact maintainers
+- Open an issue: https://github.com/cd80/don/issues
+- Contact maintainers: rkwk0112@gmail.com
 
 Thank you for contributing to Bitcoin Trading RL!

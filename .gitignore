@@ -19,9 +19,11 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
 # Virtual Environment
 venv/
+env/
 ENV/
 
 # IDE
@@ -29,45 +31,117 @@ ENV/
 .vscode/
 *.swp
 *.swo
-
-# Project specific
-data/raw/*
-data/processed/*
-data/external/*
-results/logs/*
-results/checkpoints/*
-results/evaluation/*
-!data/raw/.gitkeep
-!data/processed/.gitkeep
-!data/external/.gitkeep
-!results/logs/.gitkeep
-!results/checkpoints/.gitkeep
-!results/evaluation/.gitkeep
+*~
 
 # Jupyter Notebook
 .ipynb_checkpoints
 *.ipynb_checkpoints/
 
-# Environment variables
-.env
+# Testing
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# Distribution
+*.tar.gz
+*.zip
+*.rar
 
 # Logs
 *.log
+logs/
+results/logs/
 
-# Model files
-*.pt
-*.pth
+# Environment variables
+.env
+.env.production
+.env.local
+.env.*.local
+
+# Data
+data/raw/*
+data/processed/*
+data/external/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/external/.gitkeep
+
+# Models and checkpoints
+results/checkpoints/*
+results/evaluation/*
+!results/checkpoints/.gitkeep
+!results/evaluation/.gitkeep
+
+# Documentation
+site/
+docs/_build/
+
+# Docker
+.docker/
+
+# System
+.DS_Store
+Thumbs.db
+
+# Credentials and secrets
+*.pem
+*.key
+*.crt
+*.cert
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.truststore
+
+# Trading specific
+*.pickle
+*.joblib
 *.h5
 *.ckpt
+*.pt
+*.pth
+*.model
+*.weights
 
-# Data files
-*.csv
-*.parquet
-*.json
-*.pickle
-*.pkl
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
 
-# OS generated files
+# Node modules (if using any JavaScript tools)
+node_modules/
+
+# Local configuration
+.local/
+.config/
+
+# Profiling
+*.prof
+*.lprof
+*.stats
+
+# Cache
+.cache/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+
+# Editor specific
+*.sublime-project
+*.sublime-workspace
+*.komodoproject
+.komodotools/
+.atom/
+.brackets.json
+.vscode/
+*.code-workspace
+
+# OS specific
 .DS_Store
 .DS_Store?
 ._*
@@ -75,3 +149,11 @@ results/evaluation/*
 .Trashes
 ehthumbs.db
 Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Custom
+*.custom
+*.local
+*.private
+*.secret

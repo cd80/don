@@ -63,7 +63,7 @@ We take security vulnerabilities seriously. Please follow these steps to report 
 
 1. **Do Not** create a public GitHub issue for security vulnerabilities
 
-2. **Email** security@bitcointradingrl.org with:
+2. **Email** rkwk0112@gmail.com with:
 
    - Description of the vulnerability
    - Steps to reproduce
@@ -114,74 +114,13 @@ We take security vulnerabilities seriously. Please follow these steps to report 
        notify_admin(e)
    ```
 
-### For Developers
-
-1. **Code Security**
-
-   ```python
-   # Input validation
-   def validate_order(order: Dict) -> bool:
-       if not isinstance(order.get('size'), (int, float)):
-           raise ValueError("Invalid order size")
-       if order.get('size') > MAX_ORDER_SIZE:
-           raise ValueError("Order size exceeds limit")
-       return True
-   ```
-
-2. **Rate Limiting**
-
-   ```python
-   from ratelimit import limits, sleep_and_retry
-
-   @sleep_and_retry
-   @limits(calls=10, period=1)  # 10 calls per second
-   def api_call():
-       # API logic here
-       pass
-   ```
-
-3. **Secure Logging**
-   ```python
-   # Avoid logging sensitive data
-   def log_trade(trade: Dict):
-       safe_trade = trade.copy()
-       safe_trade.pop('api_key', None)
-       safe_trade.pop('signature', None)
-       logger.info(f"Trade executed: {safe_trade}")
-   ```
-
-## Security Checklist
-
-### Before Deployment
-
-- [ ] Update all dependencies
-- [ ] Run security audit
-- [ ] Check API permissions
-- [ ] Set up monitoring
-- [ ] Configure backups
-- [ ] Test recovery procedures
-- [ ] Review access controls
-- [ ] Enable logging
-- [ ] Configure alerts
-
-### Regular Maintenance
-
-- [ ] Monitor system logs
-- [ ] Review access logs
-- [ ] Update dependencies
-- [ ] Rotate API keys
-- [ ] Backup verification
-- [ ] Security audit
-- [ ] Update documentation
-- [ ] Test recovery procedures
-
 ## Contact
 
 Security Team:
 
-- Email: security@bitcointradingrl.org
-- PGP Key: [Download PGP Key](https://bitcointradingrl.org/security.asc)
-- Bug Bounty Program: https://bitcointradingrl.org/bounty
+- Email: rkwk0112@gmail.com
+- GitHub: https://github.com/cd80/don/security
+- Bug Reports: https://github.com/cd80/don/issues
 
 ## Updates
 
