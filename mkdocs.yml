@@ -1,116 +1,97 @@
 site_name: Bitcoin Trading RL
-site_description: Deep Learning Bitcoin Trading Algorithm Documentation
+site_description: A comprehensive cryptocurrency trading framework using reinforcement
+  learning and advanced trading strategies
 site_author: Your Name
 repo_url: https://github.com/yourusername/bitcoin_trading_rl
-repo_name: bitcoin_trading_rl
-
 theme:
   name: material
   features:
-    - navigation.tabs
-    - navigation.sections
-    - navigation.top
-    - search.highlight
-    - search.share
-    - content.code.copy
+  - navigation.tabs
+  - navigation.sections
+  - navigation.expand
+  - search.suggest
+  - search.highlight
   palette:
-    - scheme: default
-      primary: indigo
-      accent: indigo
-      toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
-    - scheme: slate
-      primary: indigo
-      accent: indigo
-      toggle:
-        icon: material/brightness-4
-        name: Switch to light mode
-
+  - scheme: default
+    primary: indigo
+    accent: indigo
+    toggle:
+      icon: material/toggle-switch-off-outline
+      name: Switch to dark mode
+  - scheme: slate
+    primary: indigo
+    accent: indigo
+    toggle:
+      icon: material/toggle-switch
+      name: Switch to light mode
 nav:
-  - Home: index.md
-  - Getting Started:
-      - Installation: guides/installation.md
-      - Quick Start: guides/quickstart.md
-      - Configuration: guides/configuration.md
-  - User Guide:
-      - Overview: guides/overview.md
-      - Data Pipeline: guides/data-pipeline.md
-      - Feature Engineering: guides/feature-engineering.md
-      - Model Architecture: guides/model-architecture.md
-      - Training: guides/training.md
-      - Evaluation: guides/evaluation.md
-  - Features:
-      - Sentiment Analysis: guides/sentiment-analysis.md
-      - Risk Management: guides/risk-management.md
-      - Visualization: guides/visualization.md
-  - Tutorials:
-      - Basic Usage: tutorials/basic-usage.md
-      - Advanced Features: tutorials/advanced-features.md
-      - Custom Strategies: tutorials/custom-strategies.md
-  - API Reference:
-      - Data: api/data.md
-      - Features: api/features.md
-      - Models: api/models.md
-      - Training: api/training.md
-      - Evaluation: api/evaluation.md
-      - Visualization: api/visualization.md
-  - Development:
-      - Contributing: CONTRIBUTING.md
-      - Roadmap: ROADMAP.md
-      - Project Status: PROJECT_STATUS.md
-
-plugins:
-  - search
-  - mkdocstrings:
-      default_handler: python
-      handlers:
-        python:
-          setup_commands:
-            - import sys
-            - sys.path.append("src")
-          selection:
-            docstring_style: google
-          rendering:
-            show_source: true
-            show_root_heading: true
-  - mike
-
+- Guides:
+  - Arbitrage Strategies: guides/arbitrage-strategies.md
+  - Curriculum Learning: guides/curriculum-learning.md
+  - Distributed Training: guides/distributed-training.md
+  - Enhanced Evaluation: guides/enhanced-evaluation.md
+  - Ensemble Learning: guides/ensemble-learning.md
+  - High Frequency Trading: guides/high-frequency-trading.md
+  - Installation: guides/installation.md
+  - Market Making: guides/market-making.md
+  - Meta Learning: guides/meta-learning.md
+  - Multi Task Learning: guides/multi-task-learning.md
+  - Portfolio Optimization: guides/portfolio-optimization.md
+  - Production: guides/production.md
+  - Quickstart: guides/quickstart.md
+  - Risk Management: guides/risk-management.md
+  - Sentiment Analysis: guides/sentiment-analysis.md
+  - Statistical Arbitrage: guides/statistical-arbitrage.md
+  - Transfer Learning: guides/transfer-learning.md
+- API Reference: api/
 markdown_extensions:
-  - admonition
-  - codehilite
-  - footnotes
-  - meta
-  - toc:
-      permalink: true
-  - pymdownx.arithmatex
-  - pymdownx.betterem:
-      smart_enable: all
-  - pymdownx.caret
-  - pymdownx.critic
-  - pymdownx.details
-  - pymdownx.emoji:
-      emoji_index: !!python/name:materialx.emoji.twemoji
-      emoji_generator: !!python/name:materialx.emoji.to_svg
-  - pymdownx.highlight
-  - pymdownx.inlinehilite
-  - pymdownx.keys
-  - pymdownx.mark
-  - pymdownx.smartsymbols
-  - pymdownx.superfences
-  - pymdownx.tabbed:
-      alternate_style: true
-  - pymdownx.tasklist:
-      custom_checkbox: true
-  - pymdownx.tilde
-
+- admonition
+- codehilite
+- footnotes
+- meta
+- toc:
+    permalink: true
+- pymdownx.arithmatex
+- pymdownx.betterem:
+    smart_enable: all
+- pymdownx.caret
+- pymdownx.critic
+- pymdownx.details
+- pymdownx.highlight:
+    use_pygments: true
+- pymdownx.inlinehilite
+- pymdownx.magiclink
+- pymdownx.mark
+- pymdownx.smartsymbols
+- pymdownx.superfences
+- pymdownx.tasklist:
+    custom_checkbox: true
+- pymdownx.tilde
+plugins:
+- search
+- minify:
+    minify_html: true
+    minify_js: true
+    minify_css: true
+    htmlmin_opts:
+      remove_comments: true
+- git-revision-date-localized:
+    type: date
+- mkdocstrings:
+    default_handler: python
+    handlers:
+      python:
+        rendering:
+          show_source: true
+          show_root_heading: true
+          show_category_heading: true
+          show_if_no_docstring: true
 extra:
-  version:
-    provider: mike
   social:
-    - icon: fontawesome/brands/github
-      link: https://github.com/yourusername/bitcoin_trading_rl
-    - icon: fontawesome/brands/python
-      link: https://pypi.org/project/bitcoin-trading-rl/
-
+  - icon: fontawesome/brands/github
+    link: https://github.com/yourusername/bitcoin_trading_rl
+  - icon: fontawesome/brands/python
+    link: https://pypi.org/project/bitcoin-trading-rl/
+  - icon: fontawesome/brands/docker
+    link: https://hub.docker.com/r/yourusername/bitcoin_trading_rl
 copyright: Copyright &copy; 2024 Your Name

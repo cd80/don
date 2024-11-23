@@ -159,6 +159,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Initial commit: Complete implementation of all major trading strategies
+
+### Added
+- Initial commit: Complete implementation of all major trading strategies
+
 ### Planned
 
 - System optimization
