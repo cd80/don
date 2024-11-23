@@ -28,9 +28,10 @@ theme:
 nav:
   - Home: index.md
   - Guides:
-      - Installation: guides/installation.md
-      - Quick Start: guides/quickstart.md
-      - Production: guides/production.md
+      - Getting Started:
+          - Installation: guides/installation.md
+          - Quick Start: guides/quickstart.md
+          - Production: guides/production.md
       - Trading Strategies:
           - Arbitrage: guides/arbitrage-strategies.md
           - Market Making: guides/market-making.md
@@ -47,6 +48,8 @@ nav:
           - Curriculum Learning: guides/curriculum-learning.md
           - Enhanced Evaluation: guides/enhanced-evaluation.md
           - Sentiment Analysis: guides/sentiment-analysis.md
+      - Optimization:
+          - Performance Optimization: guides/performance-optimization.md
 
 markdown_extensions:
   - admonition
