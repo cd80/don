@@ -1,0 +1,27 @@
+# AWS SDK
+boto3>=1.26.0
+awscli>=1.27.0
+
+# Database
+psycopg2-binary>=2.9.0
+
+# Monitoring
+prometheus_client>=0.16.0
+python-json-logger>=2.0.0
+
+# Utils
+python-dotenv>=0.19.0
+schedule>=1.1.0
+requests>=2.28.0
+
+# Compression
+zstandard>=0.19.0
+
+# Health check
+aiohttp>=3.8.0
+
+# Encryption
+cryptography>=41.0.0
+
+# Logging
+structlog>=23.1.0

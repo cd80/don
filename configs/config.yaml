@@ -1,0 +1,191 @@
+# Data Configuration
+data:
+  binance:
+    symbol: "BTCUSDT"
+    interval: "5m"
+    start_date: "2019-01-01"
+    end_date: "now"
+  storage:
+    format: "parquet"
+    compression: "snappy"
+  features:
+    technical_indicators:
+      - "RSI"
+      - "MACD"
+      - "BB"
+      - "Ichimoku"
+    statistical_features:
+      - "rolling_mean"
+      - "rolling_std"
+      - "z_score"
+    time_features:
+      - "hour"
+      - "day_of_week"
+      - "month"
+  sentiment:
+    news:
+      apis:
+        - name: "newsapi"
+          key: "${NEWSAPI_KEY}"
+          endpoints:
+            - "everything"
+            - "top-headlines"
+        - name: "cryptocompare"
+          key: "${CRYPTOCOMPARE_KEY}"
+    social:
+      twitter:
+        api_key: "${TWITTER_API_KEY}"
+        api_secret: "${TWITTER_API_SECRET}"
+        access_token: "${TWITTER_ACCESS_TOKEN}"
+        access_secret: "${TWITTER_ACCESS_SECRET}"
+        keywords:
+          - "bitcoin"
+          - "btc"
+          - "crypto"
+      reddit:
+        client_id: "${REDDIT_CLIENT_ID}"
+        client_secret: "${REDDIT_CLIENT_SECRET}"
+        subreddits:
+          - "bitcoin"
+          - "cryptocurrency"
+          - "bitcoinmarkets"
+    analysis:
+      window_size: "1h"
+      update_interval: 300
+      features:
+        - "sentiment_score"
+        - "sentiment_momentum"
+        - "sentiment_volatility"
+        - "extreme_sentiment"
+        - "sentiment_divergence"
+      weights:
+        news: 0.6
+        social: 0.4
+
+# Model Configuration
+model:
+  type: "hierarchical_rl"
+  architecture:
+    actor_hidden_layers: [512, 256, 128]
+    critic_hidden_layers: [512, 256, 128]
+    attention_heads: 8
+    transformer_layers: 6
+
+# Training Configuration
+training:
+  batch_size: 64
+  learning_rate: 0.0001
+  gamma: 0.99
+  update_interval: 100
+  replay_buffer_size: 1000000
+  num_epochs: 100
+  validation_split: 0.2
+  early_stopping:
+    patience: 10
+    min_delta: 0.001
+  checkpointing:
+    save_best: true
+    save_frequency: 10
+  optimizer:
+    type: "adam"
+    beta1: 0.9
+    beta2: 0.999
+    epsilon: 1e-8
+    weight_decay: 0.0
+  scheduler:
+    type: "cosine"
+    warmup_steps: 1000
+    cycles: 0.5
+
+  # Distributed Training Settings
+  distributed:
+    enabled: true
+    backend: "nccl" # nccl for GPU, gloo for CPU
+    world_size: -1 # -1 for all available GPUs
+    num_nodes: 1
+    node_rank: 0
+    master_addr: "localhost"
+    master_port: 12355
+    init_method: "env://"
+    sync_bn: true
+    find_unused_parameters: true
+
+  # Multi-GPU Settings
+  gpu:
+    enabled: true
+    devices: "all" # "all" or list of device ids
+    data_parallel: true
+    mixed_precision: true
+    optimization_level: "O2"
+    gradient_sync_period: 1
+    gradient_accumulation_steps: 1
+    memory_efficient: true
+    cudnn_benchmark: true
+    deterministic: false
+
+  # Performance Optimization
+  performance:
+    num_workers: -1 # -1 for all CPU cores
+    pin_memory: true
+    prefetch_factor: 2
+    persistent_workers: true
+    use_amp: true
+    grad_clip: 1.0
+    grad_clip_type: "norm"
+    benchmark_mode: true
+    profile_execution: false
+    optimize_memory: true
+    cuda_graphs: true
+
+# Hardware Configuration
+hardware:
+  device: "auto" # auto, cuda, mps, or cpu
+  num_gpus: -1 # -1 for all available
+  num_workers: -1 # -1 for all CPU cores
+  memory_limit: null # null for no limit
+  gpu_memory_fraction: 0.9
+  cpu_affinity: null
+
+# Risk Management
+risk:
+  max_position_size: 1.0
+  max_leverage: 3.0
+  stop_loss_pct: 0.02
+  take_profit_pct: 0.05
+  var_confidence: 0.95
+  max_drawdown: 0.20
+
+# Evaluation
+evaluation:
+  metrics:
+    - "sharpe_ratio"
+    - "sortino_ratio"
+    - "max_drawdown"
+    - "win_rate"
+    - "profit_factor"
+  benchmarks:
+    - "buy_and_hold"
+    - "moving_average_cross"
+  backtesting:
+    initial_capital: 100000
+    transaction_fee: 0.001
+
+# Logging
+logging:
+  level: "INFO"
+  format: "json"
+  save_path: "results/logs"
+  wandb:
+    project: "bitcoin_trading_rl"
+    entity: "your_username"
+
+# Visualization
+visualization:
+  update_interval: 60 # seconds
+  plots:
+    - "equity_curve"
+    - "drawdown"
+    - "position_size"
+    - "trade_history"
+    - "risk_metrics"
+    - "sentiment_analysis"

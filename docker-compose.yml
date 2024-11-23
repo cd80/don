@@ -1,0 +1,76 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    container_name: bitcoin_trading_rl
+    volumes:
+      - .:/app
+      - ./data:/app/data
+      - ./results:/app/results
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - WANDB_API_KEY=${WANDB_API_KEY}
+      - BINANCE_API_KEY=${BINANCE_API_KEY}
+      - BINANCE_API_SECRET=${BINANCE_API_SECRET}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    ports:
+      - "8888:8888" # Jupyter Notebook
+      - "6006:6006" # TensorBoard
+    command: >
+      bash -c "
+        tensorboard --logdir results/logs --host 0.0.0.0 --port 6006 &
+        jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token='' --NotebookApp.password=''
+      "
+
+  tensorboard:
+    image: tensorflow/tensorflow:latest
+    container_name: tensorboard
+    volumes:
+      - ./results:/logs
+    ports:
+      - "6007:6006"
+    command: tensorboard --logdir /logs --host 0.0.0.0 --port 6006
+
+  # Optional service for development
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bitcoin_trading_rl_dev
+    volumes:
+      - .:/app
+      - ./data:/app/data
+      - ./results:/app/results
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - WANDB_API_KEY=${WANDB_API_KEY}
+      - BINANCE_API_KEY=${BINANCE_API_KEY}
+      - BINANCE_API_SECRET=${BINANCE_API_SECRET}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    ports:
+      - "8889:8888" # Jupyter Notebook
+      - "6008:6006" # TensorBoard
+    command: /bin/bash
+    stdin_open: true
+    tty: true
+
+networks:
+  default:
+    driver: bridge
+
+volumes:
+  data:
+  results:

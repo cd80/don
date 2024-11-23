@@ -1,0 +1,89 @@
+# Multi-stage build for model service
+FROM nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04 as base
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.10 \
+    python3-pip \
+    python3-dev \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN useradd -m -s /bin/bash model_user
+
+# Create app directory and set permissions
+WORKDIR /app
+RUN chown model_user:model_user /app
+
+# Switch to non-root user
+USER model_user
+
+# Install Python dependencies
+COPY --chown=model_user:model_user requirements.txt .
+RUN pip install --user --no-cache-dir -r requirements.txt
+
+# Development stage
+FROM base as development
+
+# Install development dependencies
+COPY --chown=model_user:model_user requirements-dev.txt .
+RUN pip install --user --no-cache-dir -r requirements-dev.txt
+
+# Copy application code
+COPY --chown=model_user:model_user . .
+
+# Production stage
+FROM base as production
+
+# Copy only necessary files
+COPY --chown=model_user:model_user src/models src/models
+COPY --chown=model_user:model_user src/utils src/utils
+COPY --chown=model_user:model_user configs configs
+COPY --chown=model_user:model_user scripts/model_service.py .
+
+# Create directories for model artifacts
+RUN mkdir -p /app/checkpoints /app/logs
+RUN chown -R model_user:model_user /app/checkpoints /app/logs
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8001/health || exit 1
+
+# Set environment variables for production
+ENV MODEL_SERVICE_PORT=8001 \
+    MODEL_SERVICE_HOST=0.0.0.0 \
+    LOG_LEVEL=INFO \
+    CUDA_VISIBLE_DEVICES=0
+
+# Expose port
+EXPOSE 8001
+
+# Command to run the model service
+CMD ["python3", "model_service.py"]
+
+# GPU stage
+FROM production as gpu
+
+# Set NVIDIA runtime environment
+ENV NVIDIA_VISIBLE_DEVICES=all \
+    NVIDIA_DRIVER_CAPABILITIES=compute,utility \
+    NVIDIA_REQUIRE_CUDA="cuda>=11.8"
+
+# Install additional CUDA dependencies if needed
+RUN pip install --user --no-cache-dir \
+    torch==2.0.1+cu118 \
+    torchvision==0.15.2+cu118 \
+    torchaudio==2.0.2 \
+    --extra-index-url https://download.pytorch.org/whl/cu118
+
+# Command to run with GPU support
+CMD ["python3", "model_service.py", "--gpu"]

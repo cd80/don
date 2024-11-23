@@ -1,0 +1,42 @@
+# Use Alpine Linux for a small image size
+FROM alpine:3.18
+
+# Install required packages
+RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    aws-cli \
+    postgresql-client \
+    curl \
+    bash
+
+# Create backup user
+RUN adduser -D backup_user
+
+# Create necessary directories
+WORKDIR /app
+RUN mkdir -p /app/backups && chown -R backup_user:backup_user /app
+
+# Switch to backup user
+USER backup_user
+
+# Install Python dependencies
+COPY --chown=backup_user:backup_user requirements-backup.txt .
+RUN pip3 install --user --no-cache-dir -r requirements-backup.txt
+
+# Copy backup script
+COPY --chown=backup_user:backup_user scripts/backup.sh /app/backup.sh
+RUN chmod +x /app/backup.sh
+
+# Set environment variables
+ENV PATH="/home/backup_user/.local/bin:${PATH}" \
+    BACKUP_RETENTION_DAYS=30 \
+    BACKUP_SCHEDULE="0 0 * * *" \
+    HEALTHCHECK_PORT=8003
+
+# Health check
+HEALTHCHECK --interval=5m --timeout=3s \
+    CMD curl -f http://localhost:${HEALTHCHECK_PORT}/health || exit 1
+
+# Default command
+CMD ["/app/backup.sh"]
