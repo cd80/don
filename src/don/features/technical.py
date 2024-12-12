@@ -116,17 +116,8 @@ class TechnicalIndicators(BaseFeatureCalculator):
     def _calculate_vwap(self, high: pd.Series, low: pd.Series,
                        close: pd.Series, volume: pd.Series) -> pd.Series:
         """Calculate Volume Weighted Average Price (VWAP)."""
-        df = pd.DataFrame({
-            'high': high,
-            'low': low,
-            'close': close,
-            'volume': volume,
-            'date': pd.to_datetime(high.index.date)
-        })
-        df['typical_price'] = (df['high'] + df['low'] + df['close']) / 3
-        df['cumsum_tp_vol'] = df.groupby('date').apply(lambda x: (x['typical_price'] * x['volume']).cumsum()).reset_index(level=0, drop=True)
-        df['cumsum_vol'] = df.groupby('date').apply(lambda x: x['volume'].cumsum()).reset_index(level=0, drop=True)
-        return df['cumsum_tp_vol'] / df['cumsum_vol']
+        typical_price = (high + low + close) / 3
+        return (typical_price * volume).cumsum() / volume.cumsum()
 
     def _calculate_stochastic(self, high: pd.Series, low: pd.Series,
                             close: pd.Series, k_period: int = 14,
