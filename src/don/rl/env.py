@@ -6,7 +6,22 @@ from .actions import DiscreteActionSpace, ContinuousActionSpace
 from .rewards import BaseReward, PnLReward
 
 class TradingEnvironment(gym.Env):
-    """Trading environment for reinforcement learning."""
+    """Trading environment for reinforcement learning.
+
+    This environment simulates cryptocurrency trading with the following features:
+    - Position sizing: Both discrete and continuous actions supported
+    - Transaction costs: Configurable commission rates
+    - Observation space: Rolling window of market features
+    - Reward calculation: Flexible reward strategies (PnL, Sharpe, etc.)
+    - Performance tracking: Tracks PnL, position sizes, and trade history
+
+    The trading logic follows these steps:
+    1. Agent receives market observation (window of features)
+    2. Agent decides position size (-1.0 to 1.0)
+    3. Environment calculates transaction costs
+    4. Environment calculates PnL and reward
+    5. Environment updates state and returns next observation
+    """
 
     def __init__(self,
                  data: pd.DataFrame,
