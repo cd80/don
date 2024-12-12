@@ -209,22 +209,32 @@ def test_train_start():
         'adx': [30.0] * 5
     })
 
+    # Mock action space
+    mock_action_space = Mock()
+    mock_action_space.sample.return_value = 0
+
     # Mock process for dashboard
     mock_process = Mock()
     mock_process.is_alive.return_value = True
+    mock_process.terminate = Mock()
+
+    # Mock subprocess for dashboard
+    mock_subprocess_run = Mock()
 
     with patch('don.cli.commands.load_settings', return_value=mock_settings), \
          patch('don.cli.commands.create_engine', return_value=mock_engine), \
          patch('don.cli.commands.sessionmaker', return_value=mock_session_maker), \
          patch('pandas.read_sql_query', return_value=mock_data), \
+         patch('don.cli.commands.DiscreteActionSpace', return_value=mock_action_space), \
          patch('don.cli.commands.TradingEnvironment') as mock_env, \
          patch('multiprocessing.Process', return_value=mock_process), \
-         patch('time.sleep'):  # Mock sleep to speed up test
+         patch('subprocess.run', mock_subprocess_run), \
+         patch('time.sleep', side_effect=KeyboardInterrupt), \
+         patch('signal.signal'):  # Mock signal handler
 
         # Set up environment mock
         instance = mock_env.return_value
-        instance.action_space = Mock()
-        instance.action_space.sample = Mock(return_value=0)
+        instance.action_space = mock_action_space
         instance.step = Mock(return_value=(None, 0, False, {}))
         instance.reset = Mock()
 
@@ -235,8 +245,9 @@ def test_train_start():
         assert result.exit_code == 0
         assert "Training started" in result.stdout
 
-        # Verify dashboard process was started
+        # Verify dashboard process was started and terminated
         mock_process.start.assert_called_once()
+        mock_process.terminate.assert_called_once()
 
 def test_train_without_start():
     """Test train command without --start flag."""
