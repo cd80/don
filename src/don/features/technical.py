@@ -115,14 +115,13 @@ class TechnicalIndicators(BaseFeatureCalculator):
 
     def _calculate_vwap(self, high: pd.Series, low: pd.Series,
                        close: pd.Series, volume: pd.Series) -> pd.Series:
-        """Calculate Volume Weighted Average Price (VWAP)."""
-        window = 24  # 24-hour rolling window
-        typical_price = (high + low + close) / 3
+        """Calculate Volume Weighted Average Price (VWAP).
 
-        # Calculate rolling window VWAP
-        rolling_tp_vol = (typical_price * volume).rolling(window=window, min_periods=1)
-        rolling_vol = volume.rolling(window=window, min_periods=1)
-        return rolling_tp_vol.sum() / rolling_vol.sum()
+        VWAP is calculated as the cumulative sum of price * volume divided by cumulative volume.
+        This is the standard VWAP calculation method used in financial markets.
+        """
+        typical_price = (high + low + close) / 3
+        return (typical_price * volume).cumsum() / volume.cumsum()
 
     def _calculate_stochastic(self, high: pd.Series, low: pd.Series,
                             close: pd.Series, k_period: int = 14,
