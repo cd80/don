@@ -49,23 +49,26 @@ class Settings(BaseSettings):
         try:
             # Check Binance API credentials
             if not self.binance_api_key.get_secret_value():
-                console.print("[red]Missing Binance API key[/red]")
-                return False
+                msg = "Missing Binance API key"
+                console.print(f"[red]{msg}[/red]")
+                raise ValueError(msg)
             if not self.binance_api_secret.get_secret_value():
-                console.print("[red]Missing Binance API secret[/red]")
-                return False
+                msg = "Missing Binance API secret"
+                console.print(f"[red]{msg}[/red]")
+                raise ValueError(msg)
 
             # Validate database URL
             if not self.database_url:
-                console.print("[red]Missing database URL[/red]")
-                return False
+                msg = "Missing database URL"
+                console.print(f"[red]{msg}[/red]")
+                raise ValueError(msg)
 
             console.print("[green]Configuration validation successful![/green]")
             return True
 
         except Exception as e:
             console.print(f"[red]Configuration validation failed: {str(e)}[/red]")
-            return False
+            raise
 
     def check_database_connection(self) -> bool:
         """Test PostgreSQL database connection."""
