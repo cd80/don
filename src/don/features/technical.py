@@ -6,6 +6,17 @@ from .base import BaseFeatureCalculator
 class TechnicalIndicators(BaseFeatureCalculator):
     """Technical indicator calculator for financial data."""
 
+    def calculate_all(self, data: pd.DataFrame) -> pd.DataFrame:
+        """Calculate all technical indicators and store in database.
+
+        Args:
+            data: DataFrame with OHLCV data
+
+        Returns:
+            DataFrame with all calculated indicators
+        """
+        return self.calculate(data)
+
     def calculate(self, data: pd.DataFrame) -> pd.DataFrame:
         """Calculate technical indicators.
 
@@ -50,21 +61,49 @@ class TechnicalIndicators(BaseFeatureCalculator):
 
     def _calculate_rsi(self, prices: pd.Series, period: int = 14) -> pd.Series:
         """Calculate Relative Strength Index using Wilder's smoothing method."""
+        if len(prices) < period + 1:
+            return pd.Series(np.nan, index=prices.index)
+
+        # Calculate price changes
         delta = prices.diff()
-        gains = pd.Series(0.0, index=prices.index)
-        losses = pd.Series(0.0, index=prices.index)
-        gains[delta > 0] = delta[delta > 0]
-        losses[delta < 0] = -delta[delta < 0]
-        avg_gains = pd.Series(index=prices.index, dtype=float)
-        avg_losses = pd.Series(index=prices.index, dtype=float)
-        avg_gains.iloc[period] = gains.iloc[1:period+1].mean()
-        avg_losses.iloc[period] = losses.iloc[1:period+1].mean()
+        gains = delta.copy()
+        losses = delta.copy()
+
+        # Handle small price changes to avoid numerical instability
+        epsilon = 1e-10  # Small threshold for price changes
+        gains = gains.where(gains > epsilon, 0)
+        losses = losses.where(losses < -epsilon, 0)
+        losses = -losses  # Make losses positive
+
+        # Calculate initial averages
+        avg_gain = gains.iloc[1:period+1].mean()
+        avg_loss = losses.iloc[1:period+1].mean()
+
+        # Initialize RSI series with NaN
+        rsi = pd.Series(np.nan, index=prices.index)
+
+        # Calculate initial RSI
+        if avg_loss < epsilon:
+            rsi.iloc[period] = 100  # All gains, no losses
+        elif avg_gain < epsilon:
+            rsi.iloc[period] = 0    # All losses, no gains
+        else:
+            rs = avg_gain / avg_loss
+            rsi.iloc[period] = 100 - (100 / (1 + rs))
+
+        # Calculate RSI for remaining periods using Wilder's smoothing
         for i in range(period + 1, len(prices)):
-            avg_gains.iloc[i] = ((avg_gains.iloc[i-1] * (period-1)) + gains.iloc[i]) / period
-            avg_losses.iloc[i] = ((avg_losses.iloc[i-1] * (period-1)) + losses.iloc[i]) / period
-        rs = avg_gains / avg_losses
-        rsi = 100 - (100 / (1 + rs))
-        rsi.iloc[:period] = np.nan
+            avg_gain = ((avg_gain * (period - 1)) + gains.iloc[i]) / period
+            avg_loss = ((avg_loss * (period - 1)) + losses.iloc[i]) / period
+
+            if avg_loss < epsilon:
+                rsi.iloc[i] = 100  # All gains, no losses
+            elif avg_gain < epsilon:
+                rsi.iloc[i] = 0    # All losses, no gains
+            else:
+                rs = avg_gain / avg_loss
+                rsi.iloc[i] = 100 - (100 / (1 + rs))
+
         return rsi
 
     def _calculate_macd(self, prices: pd.Series,
@@ -127,11 +166,17 @@ class TechnicalIndicators(BaseFeatureCalculator):
                             close: pd.Series, k_period: int = 14,
                             d_period: int = 3) -> dict:
         """Calculate Stochastic Oscillator."""
-        lowest_low = low.rolling(window=k_period).min()
-        highest_high = high.rolling(window=k_period).max()
+        if len(high) < k_period:
+            empty = pd.Series(np.nan, index=high.index)
+            return {'k': empty, 'd': empty}
 
-        k = 100 * ((close - lowest_low) / (highest_high - lowest_low))
-        d = k.rolling(window=d_period).mean()
+        lowest_low = low.rolling(window=k_period, min_periods=k_period).min()
+        highest_high = high.rolling(window=k_period, min_periods=k_period).max()
+
+        k = pd.Series(np.nan, index=high.index)
+        valid_range = (highest_high - lowest_low) > 0
+        k[valid_range] = 100 * ((close - lowest_low) / (highest_high - lowest_low))[valid_range]
+        d = k.rolling(window=d_period, min_periods=d_period).mean()
 
         return {
             'k': k,
@@ -141,19 +186,27 @@ class TechnicalIndicators(BaseFeatureCalculator):
     def _calculate_adx(self, high: pd.Series, low: pd.Series,
                       close: pd.Series, period: int = 14) -> dict:
         """Calculate Average Directional Index (ADX)."""
+        if len(high) < period + 1:
+            empty = pd.Series(np.nan, index=high.index)
+            return {'adx': empty, 'plus_di': empty, 'minus_di': empty}
+
         high_low = high - low
         high_close = abs(high - close.shift(1))
         low_close = abs(low - close.shift(1))
         tr = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
-        atr = tr.rolling(window=period).mean()
+        atr = tr.ewm(span=period, min_periods=period).mean()
+
         up_move = high - high.shift(1)
         down_move = low.shift(1) - low
         plus_dm = np.where((up_move > down_move) & (up_move > 0), up_move, 0)
         minus_dm = np.where((down_move > up_move) & (down_move > 0), down_move, 0)
-        plus_di = 100 * pd.Series(plus_dm).rolling(window=period).mean() / atr
-        minus_di = 100 * pd.Series(minus_dm).rolling(window=period).mean() / atr
-        dx = 100 * abs(plus_di - minus_di) / (plus_di + minus_di)
-        adx = dx.rolling(window=period).mean()
+
+        plus_di = pd.Series(plus_dm).ewm(span=period, min_periods=period).mean() / atr * 100
+        minus_di = pd.Series(minus_dm).ewm(span=period, min_periods=period).mean() / atr * 100
+
+        dx = abs(plus_di - minus_di) / (plus_di + minus_di) * 100
+        adx = dx.ewm(span=period, min_periods=period).mean()
+
         return {
             'adx': adx,
             'plus_di': plus_di,

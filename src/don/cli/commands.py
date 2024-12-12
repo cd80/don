@@ -18,6 +18,7 @@ import typer
 from rich.progress import Progress, track
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
+import pandas as pd
 
 from .config import Settings, load_settings
 from .logging import (console, get_progress, init_logging, log_error, log_info,
@@ -29,7 +30,7 @@ if os.getenv("TEST_MODE"):
 else:
     from ..data.binance import BinanceDataCollector
 
-from ..database.models import Base
+from ..database.models import Base, MarketData, TechnicalFeatures
 from ..features.technical import TechnicalIndicators
 from ..rl.env import TradingEnvironment
 
@@ -137,9 +138,49 @@ def feature(
         session = Session()
 
         with status("Initializing feature calculation...") as st:
+            # Get OHLCV data from database
+            st.update("Fetching market data...")
+            data = pd.read_sql_query(
+                f"SELECT timestamp, open, high, low, close, volume FROM market_data WHERE symbol = '{settings.trading_symbol}' ORDER BY timestamp",
+                session.bind,
+                parse_dates=['timestamp']
+            )
+
+            if data.empty:
+                log_warning("No market data found in database")
+                raise typer.Exit(1)
+
+            # Set timestamp as index after ensuring it's datetime
+            data.set_index('timestamp', inplace=True)
+
             calculator = TechnicalIndicators()
             st.update("Calculating all technical indicators...")
-            calculator.calculate_all(session)
+            result = calculator.calculate_all(data)
+
+            # Save results back to database
+            st.update("Saving calculated features...")
+            for timestamp, row in result.iterrows():
+                feature = TechnicalFeatures(
+                    timestamp=pd.Timestamp(timestamp),  # Ensure timestamp is properly converted
+                    symbol=settings.trading_symbol,
+                    sma_20=row['sma_20'] if pd.notna(row['sma_20']) else None,
+                    rsi=row['rsi'] if pd.notna(row['rsi']) else None,
+                    macd=row['macd'] if pd.notna(row['macd']) else None,
+                    macd_signal=row['macd_signal'] if pd.notna(row['macd_signal']) else None,
+                    macd_hist=row['macd_hist'] if pd.notna(row['macd_hist']) else None,
+                    bb_upper=row['bb_upper'] if pd.notna(row['bb_upper']) else None,
+                    bb_middle=row['bb_middle'] if pd.notna(row['bb_middle']) else None,
+                    bb_lower=row['bb_lower'] if pd.notna(row['bb_lower']) else None,
+                    obv=row['obv'] if pd.notna(row['obv']) else None,
+                    vwap=row['vwap'] if pd.notna(row['vwap']) else None,
+                    stoch_k=row['stoch_k'] if pd.notna(row['stoch_k']) else None,
+                    stoch_d=row['stoch_d'] if pd.notna(row['stoch_d']) else None,
+                    adx=row['adx'] if pd.notna(row['adx']) else None,
+                    plus_di=row['plus_di'] if pd.notna(row['plus_di']) else None,
+                    minus_di=row['minus_di'] if pd.notna(row['minus_di']) else None
+                )
+                session.add(feature)
+            session.commit()
             log_success("All features calculated successfully!")
 
     except typer.Exit:
