@@ -117,13 +117,12 @@ class TechnicalIndicators(BaseFeatureCalculator):
                        close: pd.Series, volume: pd.Series) -> pd.Series:
         """Calculate Volume Weighted Average Price (VWAP)."""
         typical_price = (high + low + close) / 3
-        vwap = pd.Series(index=typical_price.index, dtype=float)
-        for date in pd.unique(typical_price.index.date):
-            mask = typical_price.index.date == date
-            tp_vol = (typical_price[mask] * volume[mask]).cumsum()
-            vol = volume[mask].cumsum()
-            daily_vwap = tp_vol / vol
-            vwap[mask] = np.minimum(np.maximum(daily_vwap, low[mask]), high[mask])
+        tp_vol = (typical_price * volume).cumsum()
+        vol = volume.cumsum()
+        vwap = tp_vol / vol
+
+        # Ensure VWAP stays within price bounds
+        vwap = np.minimum(np.maximum(vwap, low), high)
         return vwap
 
     def _calculate_stochastic(self, high: pd.Series, low: pd.Series,

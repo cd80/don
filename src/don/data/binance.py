@@ -1,5 +1,7 @@
 from typing import Dict, Any, List, Tuple, Callable
 import pandas as pd
+from datetime import datetime
+import asyncio
 from binance.client import Client
 from binance.enums import *
 from binance import BinanceSocketManager
@@ -20,6 +22,7 @@ class BinanceDataCollector(DataCollector):
         self.symbol = symbol.upper()
         self.bsm = BinanceSocketManager(self.client)
         self._trade_callbacks: List[Callable] = []
+        self._ws = None
 
     def collect_trades(self, symbol: str, limit: int = 1000) -> pd.DataFrame:
         """Collect recent trades from Binance Futures."""
@@ -63,6 +66,67 @@ class BinanceDataCollector(DataCollector):
         ])
         df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
         return df[['timestamp', 'volume', 'quote_volume']]
+
+    async def get_historical_data(self, start_time: datetime, end_time: datetime,
+                                  interval: str = "1h") -> pd.DataFrame:
+        """Get historical kline data from Binance Futures.
+
+        Args:
+            start_time: Start time for historical data
+            end_time: End time for historical data
+            interval: Kline interval (e.g., '1h', '15m')
+
+        Returns:
+            DataFrame with historical data
+        """
+        valid_intervals = ['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h',
+                           '8h', '12h', '1d', '3d', '1w', '1M']
+        if interval not in valid_intervals:
+            raise ValueError(f"Invalid interval. Must be one of {valid_intervals}")
+
+        klines = self.client.futures_klines(
+            symbol=self.symbol,
+            interval=interval,
+            startTime=int(start_time.timestamp() * 1000),
+            endTime=int(end_time.timestamp() * 1000)
+        )
+
+        df = pd.DataFrame(klines, columns=[
+            'open_time', 'open', 'high', 'low', 'close', 'volume',
+            'close_time', 'quote_volume', 'trades', 'taker_buy_volume',
+            'taker_buy_quote_volume', 'ignore'
+        ])
+
+        for col in ['open', 'high', 'low', 'close', 'volume', 'quote_volume']:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+
+        df['trades'] = df['trades'].astype(int)
+        df['open_time'] = pd.to_datetime(df['open_time'], unit='ms')
+        df['close_time'] = pd.to_datetime(df['close_time'], unit='ms')
+
+        return df
+
+    async def start_realtime_collection(self) -> None:
+        """Start real-time data collection."""
+        self._ws = self.bsm.start_trade_socket(self.symbol, self._handle_trade_socket)
+        await self.bsm.start()
+
+    async def stop_realtime_collection(self) -> None:
+        """Stop real-time data collection."""
+        if self._ws:
+            await self.bsm.stop()
+            self._ws = None
+
+    def _convert_timestamp(self, timestamp: int) -> pd.Timestamp:
+        """Convert millisecond timestamp to pandas Timestamp.
+
+        Args:
+            timestamp: Unix timestamp in milliseconds
+
+        Returns:
+            Pandas Timestamp object
+        """
+        return pd.to_datetime(timestamp, unit='ms')
 
     def start_trade_stream(self, callback: Callable[[Dict[str, Any]], None]) -> None:
         """Start streaming trade data.

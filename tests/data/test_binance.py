@@ -48,18 +48,17 @@ def mock_socket_manager():
     socket_manager.start_trade_socket = Mock(return_value="trade_socket")
     return socket_manager
 
-def test_binance_collector_initialization(mock_binance_client):
-    """Test initialization of BinanceDataCollector."""
-    try:
-        collector = BinanceDataCollector(
-            symbol="BTCUSDT",
-            api_key="test",
-            api_secret="test"
-        )
-        assert collector.client is not None
-        assert collector.client.tld == 'com'
-    except BinanceAPIException as e:
-        pytest.skip(f"Binance API unavailable: {e}")
+@patch('don.data.binance.Client')
+def test_binance_collector_initialization(mock_client_class, mock_binance_client):
+    mock_client_class.return_value = mock_binance_client
+
+    collector = BinanceDataCollector(
+        symbol="BTCUSDT",
+        api_key="test",
+        api_secret="test"
+    )
+    assert collector.client is not None
+    assert collector.client.tld == 'com'
 
 @patch('don.data.binance.Client')
 @pytest.mark.asyncio
@@ -124,7 +123,16 @@ async def test_realtime_data_collection(mock_socket_manager_class, mock_client_c
 
     await collector.stop_realtime_collection()
 
-def test_error_handling():
+@patch('don.data.binance.Client')
+def test_error_handling(mock_client_class):
+    mock_client = Mock(spec=Client)
+    mock_client.ping.side_effect = BinanceAPIException(
+        status_code=401,
+        response=Mock(status_code=401),
+        message="Invalid API key"
+    )
+    mock_client_class.return_value = mock_client
+
     collector = BinanceDataCollector(
         symbol="BTCUSDT",
         api_key="invalid_key",
@@ -145,7 +153,10 @@ def test_error_handling():
             api_secret="test_secret"
         )
 
-def test_data_validation(mock_binance_client):
+@patch('don.data.binance.Client')
+def test_data_validation(mock_client_class, mock_binance_client):
+    mock_client_class.return_value = mock_binance_client
+
     collector = BinanceDataCollector(
         symbol="BTCUSDT",
         api_key="test_key",
