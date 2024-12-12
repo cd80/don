@@ -1,20 +1,25 @@
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Callable
 import pandas as pd
 from binance.client import Client
 from binance.enums import *
+from binance.streams import BinanceSocketManager
 from .base import DataCollector
 
 class BinanceDataCollector(DataCollector):
     """Data collector implementation for Binance Futures."""
 
-    def __init__(self, api_key: str = None, api_secret: str = None):
+    def __init__(self, symbol: str, api_key: str = None, api_secret: str = None):
         """Initialize Binance client.
 
         Args:
+            symbol: Trading symbol (e.g., 'BTCUSDT')
             api_key: Binance API key
             api_secret: Binance API secret
         """
         self.client = Client(api_key, api_secret)
+        self.symbol = symbol.upper()
+        self.bsm = BinanceSocketManager(self.client)
+        self._trade_callbacks: List[Callable] = []
 
     def collect_trades(self, symbol: str, limit: int = 1000) -> pd.DataFrame:
         """Collect recent trades from Binance Futures."""
@@ -58,3 +63,21 @@ class BinanceDataCollector(DataCollector):
         ])
         df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
         return df[['timestamp', 'volume', 'quote_volume']]
+
+    def start_trade_stream(self, callback: Callable[[Dict[str, Any]], None]) -> None:
+        """Start streaming trade data.
+
+        Args:
+            callback: Function to handle incoming trade data
+        """
+        self._trade_callbacks.append(callback)
+        self.bsm.start_trade_socket(self.symbol, self._handle_trade_socket)
+
+    def _handle_trade_socket(self, msg: Dict[str, Any]) -> None:
+        """Handle incoming trade socket messages.
+
+        Args:
+            msg: Trade message from websocket
+        """
+        for callback in self._trade_callbacks:
+            callback(msg)
