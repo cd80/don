@@ -3,9 +3,8 @@ from unittest.mock import Mock, patch, AsyncMock
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-from binance.client import Client
+from binance.client import Client, AsyncClient
 from binance.exceptions import BinanceAPIException
-from binance.websocket_manager import BinanceSocketManager
 from don.data.binance import BinanceDataCollector
 from don.data.base import DataCollector
 
@@ -47,12 +46,11 @@ def mock_binance_client():
     return client
 
 @pytest.fixture
-def mock_socket_manager():
-    """Mock BinanceSocketManager."""
+def mock_async_client():
+    """Mock AsyncClient."""
     mock = AsyncMock()
-    mock.start_trade_socket.return_value = "ws_connection"
-    mock.start = AsyncMock()
-    mock.stop = AsyncMock()
+    mock.futures_stream_get_listen_key = AsyncMock(return_value="test_listen_key")
+    mock.close_connection = AsyncMock()
     return mock
 
 @patch('don.data.binance.Client')
@@ -95,12 +93,12 @@ async def test_historical_data_collection(mock_client_class, mock_binance_client
     ])
 
 @patch('don.data.binance.Client')
-@patch('don.data.binance.BinanceSocketManager')
+@patch('don.data.binance.AsyncClient')
 @pytest.mark.asyncio
-async def test_realtime_data_collection(mock_socket_manager_class, mock_client_class,
-                                        mock_binance_client, mock_socket_manager):
+async def test_realtime_data_collection(mock_async_client_class, mock_client_class,
+                                        mock_binance_client, mock_async_client):
     mock_client_class.return_value = mock_binance_client
-    mock_socket_manager_class.return_value = mock_socket_manager
+    mock_async_client_class.return_value = mock_async_client
 
     collector = BinanceDataCollector(
         symbol="BTCUSDT",
@@ -109,14 +107,11 @@ async def test_realtime_data_collection(mock_socket_manager_class, mock_client_c
     )
 
     await collector.start_realtime_collection()
-    mock_socket_manager.start_trade_socket.assert_called_once_with(
-        "BTCUSDT",
-        collector._handle_trade_socket
-    )
-    mock_socket_manager.start.assert_called_once()
+    mock_async_client.futures_stream_get_listen_key.assert_called_once()
+    mock_async_client.close_connection.assert_not_called()
 
     await collector.stop_realtime_collection()
-    mock_socket_manager.stop.assert_called_once()
+    mock_async_client.close_connection.assert_called_once()
 
     trade_data = {
         "e": "trade",

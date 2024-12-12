@@ -2,9 +2,8 @@ from typing import Dict, Any, List, Tuple, Callable
 import pandas as pd
 from datetime import datetime
 import asyncio
-from binance.client import Client
+from binance.client import Client, AsyncClient
 from binance.enums import *
-from binance.websocket_manager import BinanceSocketManager
 from binance.exceptions import BinanceAPIException
 from .base import DataCollector
 
@@ -21,9 +20,9 @@ class BinanceDataCollector(DataCollector):
         """
         self.client = Client(api_key, api_secret)
         self.symbol = symbol.upper()
-        self.bsm = BinanceSocketManager(self.client)
-        self._trade_callbacks: List[Callable] = []
         self._ws = None
+        self._trade_callbacks: List[Callable] = []
+        self._async_client = None
 
     def collect_trades(self, symbol: str, limit: int = 1000) -> pd.DataFrame:
         """Collect recent trades from Binance Futures."""
@@ -109,14 +108,14 @@ class BinanceDataCollector(DataCollector):
 
     async def start_realtime_collection(self) -> None:
         """Start real-time data collection."""
-        self._ws = self.bsm.start_trade_socket(self.symbol, self._handle_trade_socket)
-        await self.bsm.start()
+        self._async_client = await AsyncClient.create(api_key=self.client.API_KEY, api_secret=self.client.API_SECRET)
+        self._ws = await self._async_client.futures_stream_get_listen_key()
 
     async def stop_realtime_collection(self) -> None:
         """Stop real-time data collection."""
-        if self._ws:
-            await self.bsm.stop()
-            self._ws = None
+        if self._async_client:
+            await self._async_client.close_connection()
+            self._async_client = None
 
     def _convert_timestamp(self, timestamp: int) -> pd.Timestamp:
         """Convert millisecond timestamp to pandas Timestamp.
