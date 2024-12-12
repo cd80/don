@@ -3,6 +3,10 @@ name = "don"
 version = "0.1.0"
 description = "Framework for high leverage trading in bitcoin futures market"
 authors = ["Your Name <your.email@example.com>"]
+packages = [
+    { include = "don", from = "src" },
+    { include = "tests", from = "." }
+]
 
 [tool.poetry.dependencies]
 python = "^3.12"
