@@ -48,14 +48,13 @@ class DiscreteActionSpace:
         Returns:
             Index of the closest valid action
         """
-        # Map extreme values to extreme positions
-        if abs(position) >= 0.6:
-            return 0 if position < 0 else len(self.positions) - 1
-
-        # For other values, find closest position
-        positions = np.array(self.positions)
-        distances = np.abs(positions - position)
-        return int(np.argmin(distances))
+        # Simple three-zone approach
+        if position <= -0.25:
+            return 0  # Map to -1.0
+        elif position >= 0.25:
+            return len(self.positions) - 1  # Map to 1.0
+        else:
+            return 2  # Map to 0.0
 
 
 class ContinuousActionSpace:
