@@ -20,6 +20,7 @@ def mock_settings():
     settings.binance_api_secret = Mock()
     settings.binance_api_secret.get_secret_value.return_value = "test_secret"
     settings.database_url = "postgresql://user:pass@localhost/testdb"
+    settings.trading_symbol = "BTCUSDT"
     return settings
 
 @pytest.mark.asyncio
@@ -53,6 +54,7 @@ async def test_collect_start():
     mock_settings.binance_api_key.get_secret_value.return_value = "test_key"
     mock_settings.binance_api_secret = Mock()
     mock_settings.binance_api_secret.get_secret_value.return_value = "test_secret"
+    mock_settings.trading_symbol = "BTCUSDT"
 
     with patch('don.cli.commands.load_settings', return_value=mock_settings), \
          patch('don.cli.commands.BinanceDataCollector') as mock_collector:
@@ -61,6 +63,11 @@ async def test_collect_start():
 
         result = runner.invoke(app, ['collect', 'start'])
         assert result.exit_code == 0
+        mock_collector.assert_called_once_with(
+            symbol="BTCUSDT",
+            api_key="test_key",
+            api_secret="test_secret"
+        )
         instance.start.assert_called_once()
         assert "Data collection started successfully" in result.stdout
 
@@ -72,6 +79,7 @@ async def test_collect_stop():
     mock_settings.binance_api_key.get_secret_value.return_value = "test_key"
     mock_settings.binance_api_secret = Mock()
     mock_settings.binance_api_secret.get_secret_value.return_value = "test_secret"
+    mock_settings.trading_symbol = "BTCUSDT"
 
     with patch('don.cli.commands.load_settings', return_value=mock_settings), \
          patch('don.cli.commands.BinanceDataCollector') as mock_collector:
@@ -80,6 +88,11 @@ async def test_collect_stop():
 
         result = runner.invoke(app, ['collect', 'stop'])
         assert result.exit_code == 0
+        mock_collector.assert_called_once_with(
+            symbol="BTCUSDT",
+            api_key="test_key",
+            api_secret="test_secret"
+        )
         instance.stop.assert_called_once()
         assert "Data collection stopped successfully" in result.stdout
 
@@ -91,6 +104,7 @@ async def test_collect_resume():
     mock_settings.binance_api_key.get_secret_value.return_value = "test_key"
     mock_settings.binance_api_secret = Mock()
     mock_settings.binance_api_secret.get_secret_value.return_value = "test_secret"
+    mock_settings.trading_symbol = "BTCUSDT"
 
     with patch('don.cli.commands.load_settings', return_value=mock_settings), \
          patch('don.cli.commands.BinanceDataCollector') as mock_collector:
@@ -99,6 +113,11 @@ async def test_collect_resume():
 
         result = runner.invoke(app, ['collect', 'resume'])
         assert result.exit_code == 0
+        mock_collector.assert_called_once_with(
+            symbol="BTCUSDT",
+            api_key="test_key",
+            api_secret="test_secret"
+        )
         instance.resume.assert_called_once()
         assert "Data collection resumed successfully" in result.stdout
 

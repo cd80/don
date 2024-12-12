@@ -39,9 +39,12 @@ async def test_check_database_connection():
         database_url='postgresql://user:pass@localhost/test'
     )
 
-    with patch('sqlalchemy.create_engine') as mock_engine:
+    with patch('sqlalchemy.create_engine') as mock_engine, \
+         patch('sqlalchemy.text') as mock_text:
         mock_conn = Mock()
         mock_engine.return_value.connect.return_value.__enter__.return_value = mock_conn
+        mock_text.return_value = "SELECT 1"
 
         assert settings.check_database_connection() is True
-        mock_conn.execute.assert_called_once_with("SELECT 1")
+        mock_text.assert_called_once_with("SELECT 1")
+        mock_conn.execute.assert_called_once_with(mock_text.return_value)
