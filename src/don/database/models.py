@@ -149,3 +149,20 @@ class TrainingRun(Base):
 
     def __repr__(self):
         return f"<TrainingRun(model_id={self.model_id}, status={self.status})>"
+
+class MarketMicrostructureFeatures(Base):
+    """Store market microstructure features."""
+    __tablename__ = 'market_microstructure_features'
+
+    id = Column(Integer, primary_key=True)
+    timestamp = Column(DateTime, index=True, nullable=False)
+    symbol = Column(String, index=True, nullable=False)
+    order_imbalance = Column(Float)
+    trade_flow_imbalance = Column(Float)
+    realized_volatility = Column(Float)
+    long_liquidation_volume = Column(Float)
+    short_liquidation_volume = Column(Float)
+    liquidation_imbalance = Column(Float)
+
+    def __repr__(self):
+        return f"<MarketMicrostructureFeatures(symbol={self.symbol}, timestamp={self.timestamp})>"
