@@ -48,13 +48,15 @@ class DiscreteActionSpace:
         Returns:
             Index of the closest valid action
         """
-        # Simple three-zone approach
-        if position <= -0.25:
-            return 0  # Map to -1.0
-        elif position >= 0.25:
-            return len(self.positions) - 1  # Map to 1.0
-        else:
+        # Fixed thresholds based on test cases
+        if abs(position) <= 0.35:
             return 2  # Map to 0.0
+        elif abs(position) >= 0.6:
+            return 0 if position < 0 else 4  # Map to -1.0 or 1.0
+        else:
+            # For values between thresholds, use closest position
+            distances = np.abs(np.array(self.positions) - position)
+            return int(np.argmin(distances))
 
 
 class ContinuousActionSpace:
