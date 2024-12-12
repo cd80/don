@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 from binance.client import Client
-from binance.streams import BinanceSocketManager
+from binance import BinanceSocketManager
 from don.data.binance import BinanceDataCollector
 from don.data.base import DataCollector
 

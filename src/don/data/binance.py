@@ -2,7 +2,7 @@ from typing import Dict, Any, List, Tuple, Callable
 import pandas as pd
 from binance.client import Client
 from binance.enums import *
-from binance.streams import BinanceSocketManager
+from binance import BinanceSocketManager
 from .base import DataCollector
 
 class BinanceDataCollector(DataCollector):
