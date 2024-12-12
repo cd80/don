@@ -57,16 +57,22 @@ class DiscreteActionSpace:
         # Find distances to all positions
         positions = np.array(self.positions)
         distances = np.abs(positions - position)
+        min_dist = np.min(distances)
+        min_dist_indices = np.where(distances == min_dist)[0]
 
-        # For negative target positions, bias towards more negative positions
-        # For positive target positions, bias towards more positive positions
-        if position < 0:
-            distances[positions > position] += 0.1
-        elif position > 0:
-            distances[positions < position] += 0.1
+        if len(min_dist_indices) > 1:
+            # If we have multiple positions at the same distance
+            if position < 0:
+                # For negative positions, select the most negative available position
+                return min_dist_indices[np.argmin(positions[min_dist_indices])]
+            elif position > 0:
+                # For positive positions, select the most positive available position
+                return min_dist_indices[np.argmax(positions[min_dist_indices])]
+            else:
+                # For zero, prefer the first option (more negative)
+                return min_dist_indices[0]
 
-        # Get index of position with minimum distance
-        return int(np.argmin(distances))
+        return int(min_dist_indices[0])
 
 
 class ContinuousActionSpace:

@@ -131,13 +131,13 @@ async def test_realtime_data_collection(mock_socket_manager_class, mock_client_c
 
 @patch('don.data.binance.Client')
 def test_error_handling(mock_client_class):
+    error_text = '{"code":-2015,"msg":"Invalid API-key, IP, or permissions for action."}'
+    mock_response = Mock(status_code=401)
     mock_client = Mock(spec=Client)
     mock_client.ping.side_effect = BinanceAPIException(
-        response=Mock(
-            status_code=401,
-            text='{"code":-2015,"msg":"Invalid API-key, IP, or permissions for action."}'
-        ),
-        status_code=401
+        mock_response,  # response must be first
+        401,  # status_code second
+        error_text  # text third
     )
     mock_client_class.return_value = mock_client
 
