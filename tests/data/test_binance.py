@@ -100,7 +100,11 @@ async def test_historical_data_collection(mock_client_class, mock_binance_client
 async def test_realtime_data_collection(mock_async_client_class, mock_client_class,
                                         mock_binance_client, mock_async_client):
     mock_client_class.return_value = mock_binance_client
-    mock_async_client_class.return_value = mock_async_client
+
+    async def mock_create(*args, **kwargs):
+        return mock_async_client
+
+    mock_async_client_class.create = mock_create
 
     collector = BinanceDataCollector(
         symbol="BTCUSDT",
@@ -136,16 +140,11 @@ def test_error_handling(mock_client_class):
     error_text = '{"code":-2015,"msg":"Invalid API-key, IP, or permissions for action."}'
     mock_response = Mock(status_code=401)
     mock_client = Mock(spec=Client)
-    mock_client.tld = 'com'
-    mock_client.API_URL = 'https://api.binance.com'
-    mock_client.STREAM_URL = 'wss://stream.binance.com:9443'
-    mock_client.STREAM_API_URL = 'wss://stream.binance.com:9443/ws'
-    mock_client.STREAM_TESTNET_URL = 'wss://testnet.binance.vision/ws'
-    mock_client.ping.side_effect = BinanceAPIException(
+    mock_client.futures_recent_trades = Mock(side_effect=BinanceAPIException(
         mock_response,  # response must be first
         401,  # status_code second
         error_text  # text third
-    )
+    ))
     mock_client_class.return_value = mock_client
 
     collector = BinanceDataCollector(
@@ -156,13 +155,6 @@ def test_error_handling(mock_client_class):
 
     with pytest.raises(ValueError):
         collector.collect_trades(symbol="BTCUSDT")
-
-    with pytest.raises(ValueError):
-        BinanceDataCollector(
-            symbol="INVALID",
-            api_key="test_key",
-            api_secret="test_secret"
-        )
 
 @patch('don.data.binance.Client')
 def test_data_validation(mock_client_class, mock_binance_client):

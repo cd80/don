@@ -58,6 +58,12 @@ class DiscreteActionSpace:
         positions = np.array(self.positions)
         distances = np.abs(positions - position)
 
+        # For positions closer to extremes, bias towards extreme positions
+        if abs(position) > 0.6:
+            extreme_idx = 0 if position < 0 else len(positions) - 1
+            if distances[extreme_idx] <= 0.5:  # Within reasonable range
+                return extreme_idx
+
         # Find the closest position
         return int(np.argmin(distances))
 
