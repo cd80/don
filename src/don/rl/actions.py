@@ -54,10 +54,17 @@ class DiscreteActionSpace:
         if position >= self.positions[-1]:
             return len(self.positions) - 1
 
-        # Find closest position by absolute distance
+        # Calculate midpoints between positions
         positions = np.array(self.positions)
-        distances = np.abs(positions - position)
-        return int(np.argmin(distances))
+        midpoints = (positions[1:] + positions[:-1]) / 2  # [-0.75, -0.25, 0.25, 0.75]
+
+        # Find the interval where position falls
+        for i, mid in enumerate(midpoints):
+            if position <= mid:
+                return i
+
+        # If we get here, position is greater than last midpoint
+        return len(positions) - 1
 
 
 class ContinuousActionSpace:
