@@ -13,8 +13,13 @@ def setup_test_env():
     os.environ["BINANCE_API_KEY"] = "test_key"
     os.environ["BINANCE_API_SECRET"] = "test_secret"
     os.environ["TRADING_SYMBOL"] = "BTCUSDT"
+    os.environ["DATABASE_URL"] = "postgresql://user:pass@localhost/test"
     yield
     os.environ.pop("TEST_MODE", None)
+    os.environ.pop("BINANCE_API_KEY", None)
+    os.environ.pop("BINANCE_API_SECRET", None)
+    os.environ.pop("TRADING_SYMBOL", None)
+    os.environ.pop("DATABASE_URL", None)
 
 def test_collect_start():
     """Test 'collect start' command."""
