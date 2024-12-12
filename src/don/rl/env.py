@@ -103,5 +103,6 @@ class TradingEnvironment(gym.Env):
             'step': self.current_step,
             'position': self.position,
             'pnl': self.pnl,
-            'trade_count': len(self.trades)
+            'trade_count': len(self.trades),
+            'trades': self.trades
         }

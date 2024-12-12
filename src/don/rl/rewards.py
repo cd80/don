@@ -99,6 +99,6 @@ class RiskAdjustedReward(BaseReward):
         Returns:
             Risk-adjusted reward value
         """
-        # Penalize large positions
-        position_cost = self.position_penalty * abs(position)
-        return pnl - position_cost
+        # Penalize large positions and round to avoid floating-point precision issues
+        position_cost = round(self.position_penalty * abs(position), 8)
+        return round(pnl - position_cost, 8)

@@ -48,7 +48,16 @@ class DiscreteActionSpace:
         Returns:
             Index of the closest valid action
         """
-        return int(np.argmin(np.abs(np.array(self.positions) - position)))
+        distances = np.abs(np.array(self.positions) - position)
+        min_distance_idx = np.argmin(distances)
+
+        # Handle edge cases for positions near boundaries
+        if position <= self.positions[0]:
+            return 0
+        elif position >= self.positions[-1]:
+            return len(self.positions) - 1
+
+        return int(min_distance_idx)
 
 
 class ContinuousActionSpace:

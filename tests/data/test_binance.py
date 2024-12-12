@@ -12,30 +12,47 @@ from don.data.base import DataCollector
 def mock_binance_client():
     client = Mock(spec=Client)
 
-    klines_data = [
-        [
-            1499040000000,
-            "8100.0",
-            "8200.0",
-            "8000.0",
-            "8150.0",
-            "10.5",
-            1499644799999,
-            "85000.0",
-            100,
-            "5.0",
-            "42000.0",
-            "0"
-        ]
-    ] * 10
+    # Mock futures_recent_trades
+    client.futures_recent_trades.return_value = [
+        {
+            'id': i,
+            'price': '50000.0',
+            'qty': '1.0',
+            'time': 1609459200000 + i * 1000,
+            'isBuyerMaker': False
+        } for i in range(10)
+    ]
 
-    client.get_klines.return_value = klines_data
+    # Mock futures_order_book
+    client.futures_order_book.return_value = {
+        'bids': [['49900.0', '1.0'] for _ in range(5)],
+        'asks': [['50100.0', '1.0'] for _ in range(5)]
+    }
+
+    # Mock futures_liquidation_orders
+    client.futures_liquidation_orders.return_value = [
+        {
+            'price': '50000.0',
+            'qty': '1.0',
+            'time': 1609459200000,
+            'side': 'BUY'
+        }
+    ]
+
+    # Mock futures_klines
+    client.futures_klines.return_value = [
+        [1609459200000, '50000.0', '50100.0', '49900.0', '50000.0', '100.0',
+         1609462800000, '5000000.0', 1000, '50.0', '2500000.0', '0.0']
+        for _ in range(10)
+    ]
+
+    client.tld = 'com'
     return client
 
 @pytest.fixture
 def mock_socket_manager():
-    socket_manager = Mock(spec=BinanceSocketManager)
-    socket_manager.start_trade_socket.return_value = "trade_socket"
+    socket_manager = Mock()
+    socket_manager.start_trade_socket = Mock(return_value="trade_socket")
     return socket_manager
 
 def test_binance_collector_initialization():

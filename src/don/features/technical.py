@@ -19,11 +19,11 @@ class TechnicalIndicators(BaseFeatureCalculator):
 
         # Basic indicators
         df['sma_20'] = self._calculate_sma(df['close'], window=20)
-        df['rsi_14'] = self._calculate_rsi(df['close'], period=14)
+        df['rsi'] = self._calculate_rsi(df['close'], period=14)
         macd_data = self._calculate_macd(df['close'])
         df['macd'] = macd_data['macd']
         df['macd_signal'] = macd_data['signal']
-        df['macd_histogram'] = macd_data['histogram']
+        df['macd_hist'] = macd_data['histogram']
         bollinger = self._calculate_bollinger_bands(df['close'])
         df['bb_upper'] = bollinger['upper']
         df['bb_middle'] = bollinger['middle']
@@ -107,6 +107,8 @@ class TechnicalIndicators(BaseFeatureCalculator):
         """Calculate Volume Weighted Average Price (VWAP)."""
         typical_price = (high + low + close) / 3
         vwap = (typical_price * volume).cumsum() / volume.cumsum()
+        vwap = np.minimum(vwap, high)
+        vwap = np.maximum(vwap, low)
         return vwap
 
     def _calculate_stochastic(self, high: pd.Series, low: pd.Series,
