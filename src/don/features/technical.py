@@ -33,6 +33,15 @@ class TechnicalIndicators(BaseFeatureCalculator):
         df['obv'] = self._calculate_obv(df['close'], df['volume'])
         df['vwap'] = self._calculate_vwap(df['high'], df['low'], df['close'], df['volume'])
 
+        # Momentum indicators
+        stoch = self._calculate_stochastic(df['high'], df['low'], df['close'])
+        df['stoch_k'] = stoch['k']
+        df['stoch_d'] = stoch['d']
+        adx_data = self._calculate_adx(df['high'], df['low'], df['close'])
+        df['adx'] = adx_data['adx']
+        df['plus_di'] = adx_data['plus_di']
+        df['minus_di'] = adx_data['minus_di']
+
         return df
 
     def _calculate_sma(self, series: pd.Series, window: int) -> pd.Series:
@@ -99,3 +108,49 @@ class TechnicalIndicators(BaseFeatureCalculator):
         typical_price = (high + low + close) / 3
         vwap = (typical_price * volume).cumsum() / volume.cumsum()
         return vwap
+
+    def _calculate_stochastic(self, high: pd.Series, low: pd.Series,
+                            close: pd.Series, k_period: int = 14,
+                            d_period: int = 3) -> dict:
+        """Calculate Stochastic Oscillator."""
+        lowest_low = low.rolling(window=k_period).min()
+        highest_high = high.rolling(window=k_period).max()
+
+        k = 100 * ((close - lowest_low) / (highest_high - lowest_low))
+        d = k.rolling(window=d_period).mean()
+
+        return {
+            'k': k,
+            'd': d
+        }
+
+    def _calculate_adx(self, high: pd.Series, low: pd.Series,
+                      close: pd.Series, period: int = 14) -> dict:
+        """Calculate Average Directional Index (ADX)."""
+        # Calculate True Range
+        high_low = high - low
+        high_close = abs(high - close.shift(1))
+        low_close = abs(low - close.shift(1))
+        tr = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
+        atr = tr.rolling(window=period).mean()
+
+        # Calculate Plus and Minus Directional Movement
+        up_move = high - high.shift(1)
+        down_move = low.shift(1) - low
+
+        plus_dm = np.where((up_move > down_move) & (up_move > 0), up_move, 0)
+        minus_dm = np.where((down_move > up_move) & (down_move > 0), down_move, 0)
+
+        # Calculate Plus and Minus Directional Indicators
+        plus_di = 100 * pd.Series(plus_dm).rolling(window=period).mean() / atr
+        minus_di = 100 * pd.Series(minus_dm).rolling(window=period).mean() / atr
+
+        # Calculate ADX
+        dx = 100 * abs(plus_di - minus_di) / (plus_di + minus_di)
+        adx = dx.rolling(window=period).mean()
+
+        return {
+            'adx': adx,
+            'plus_di': plus_di,
+            'minus_di': minus_di
+        }
