@@ -64,8 +64,9 @@ class DiscreteActionSpace:
 
         # If multiple positions have the same distance
         if len(min_dist_indices) > 1:
-            # For negative positions, prefer lower index (more negative)
-            return min_dist_indices[0]
+            # For negative positions, prefer more negative (lower index)
+            # For positive positions, prefer more positive (higher index)
+            return min_dist_indices[0] if position < 0 else min_dist_indices[-1]
 
         # For single minimum distance, return that index
         return int(min_dist_indices[0])

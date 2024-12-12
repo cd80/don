@@ -5,6 +5,7 @@ import asyncio
 from binance.client import Client
 from binance.enums import *
 from binance import BinanceSocketManager
+from binance.exceptions import BinanceAPIException
 from .base import DataCollector
 
 class BinanceDataCollector(DataCollector):
@@ -128,6 +129,29 @@ class BinanceDataCollector(DataCollector):
         """
         return pd.to_datetime(timestamp, unit='ms')
 
+    def _process_kline(self, kline: List[Any]) -> Dict[str, Any]:
+        """Process raw kline data into structured format.
+
+        Args:
+            kline: Raw kline data from Binance API
+
+        Returns:
+            Dictionary with processed kline data
+        """
+        return {
+            'timestamp': self._convert_timestamp(kline[0]),
+            'open': float(kline[1]),
+            'high': float(kline[2]),
+            'low': float(kline[3]),
+            'close': float(kline[4]),
+            'volume': float(kline[5]),
+            'close_time': self._convert_timestamp(kline[6]),
+            'quote_volume': float(kline[7]),
+            'trades': int(kline[8]),
+            'taker_buy_volume': float(kline[9]),
+            'taker_buy_quote_volume': float(kline[10])
+        }
+
     def start_trade_stream(self, callback: Callable[[Dict[str, Any]], None]) -> None:
         """Start streaming trade data.
 
@@ -137,11 +161,14 @@ class BinanceDataCollector(DataCollector):
         self._trade_callbacks.append(callback)
         self.bsm.start_trade_socket(self.symbol, self._handle_trade_socket)
 
-    def _handle_trade_socket(self, msg: Dict[str, Any]) -> None:
-        """Handle incoming trade socket messages.
-
-        Args:
-            msg: Trade message from websocket
-        """
-        for callback in self._trade_callbacks:
-            callback(msg)
+    async def _handle_trade_socket(self, msg: Dict[str, Any]) -> None:
+        """Handle incoming trade socket messages."""
+        if msg['e'] == 'trade':
+            trade = {
+                'timestamp': self._convert_timestamp(msg['T']),
+                'price': float(msg['p']),
+                'quantity': float(msg['q']),
+                'is_buyer_maker': msg['m']
+            }
+            for callback in self._trade_callbacks:
+                callback(trade)

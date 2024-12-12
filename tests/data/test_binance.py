@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, AsyncMock
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
@@ -44,9 +44,11 @@ def mock_binance_client():
 
 @pytest.fixture
 def mock_socket_manager():
-    socket_manager = Mock()
-    socket_manager.start_trade_socket = Mock(return_value="trade_socket")
-    return socket_manager
+    mock = AsyncMock()
+    mock.start_trade_socket.return_value = "ws_connection"
+    mock.start = AsyncMock()
+    mock.stop = AsyncMock()
+    return mock
 
 @patch('don.data.binance.Client')
 def test_binance_collector_initialization(mock_client_class, mock_binance_client):
@@ -101,6 +103,16 @@ async def test_realtime_data_collection(mock_socket_manager_class, mock_client_c
         api_secret="test_secret"
     )
 
+    await collector.start_realtime_collection()
+    mock_socket_manager.start_trade_socket.assert_called_once_with(
+        "BTCUSDT",
+        collector._handle_trade_socket
+    )
+    mock_socket_manager.start.assert_called_once()
+
+    await collector.stop_realtime_collection()
+    mock_socket_manager.stop.assert_called_once()
+
     trade_data = {
         "e": "trade",
         "E": 1499404907056,
@@ -115,13 +127,7 @@ async def test_realtime_data_collection(mock_socket_manager_class, mock_client_c
         "M": True
     }
 
-    await collector.start_realtime_collection()
-    collector._handle_trade_socket(trade_data)
-
-    assert mock_socket_manager.start_trade_socket.called
-    assert mock_socket_manager.start_trade_socket.call_args[0][0] == "BTCUSDT"
-
-    await collector.stop_realtime_collection()
+    await collector._handle_trade_socket(trade_data)
 
 @patch('don.data.binance.Client')
 def test_error_handling(mock_client_class):
@@ -129,7 +135,8 @@ def test_error_handling(mock_client_class):
     mock_client.ping.side_effect = BinanceAPIException(
         status_code=401,
         response=Mock(status_code=401),
-        message="Invalid API key"
+        error_code="Invalid API key",
+        error_message="Invalid API key"
     )
     mock_client_class.return_value = mock_client
 
