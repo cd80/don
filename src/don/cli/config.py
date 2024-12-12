@@ -28,14 +28,16 @@ class Settings(BaseSettings):
     technical_indicators_enabled: bool = True
 
     # Training settings
-    model_checkpoint_dir: Path = Path("checkpoints")
+    checkpoint_dir: Path = Path("checkpoints")  # Renamed to avoid model_ prefix
+    dashboard_host: str = "localhost"  # Added dashboard host
     dashboard_port: int = 8501
 
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+        protected_namespaces = ('settings_',)  # Override default protected namespaces
 
-    @validator("model_checkpoint_dir")
+    @validator("checkpoint_dir")
     def validate_checkpoint_dir(cls, v: Path) -> Path:
         """Ensure checkpoint directory exists."""
         v.mkdir(parents=True, exist_ok=True)
@@ -67,11 +69,11 @@ class Settings(BaseSettings):
     def check_database_connection(self) -> bool:
         """Test PostgreSQL database connection."""
         try:
-            from sqlalchemy import create_engine
+            from sqlalchemy import create_engine, text
 
             engine = create_engine(str(self.database_url))
             with engine.connect() as conn:
-                conn.execute("SELECT 1")
+                conn.execute(text("SELECT 1"))
 
             console.print("[green]Database connection successful![/green]")
             return True
