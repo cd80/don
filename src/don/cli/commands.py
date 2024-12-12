@@ -69,6 +69,12 @@ def collect(
     action: str = typer.Argument(
         ...,
         help="Action to perform: start, stop, or resume",
+    ),
+    symbol: str = typer.Option(
+        None,
+        "--symbol",
+        "-s",
+        help="Trading symbol (e.g., BTCUSDT)",
     )
 ) -> None:
     """Manage data collection processes."""
@@ -79,6 +85,7 @@ def collect(
     try:
         settings = load_settings()
         collector = BinanceDataCollector(
+            symbol=symbol or settings.trading_symbol,
             api_key=settings.binance_api_key.get_secret_value(),
             api_secret=settings.binance_api_secret.get_secret_value(),
         )

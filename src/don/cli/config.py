@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     # Binance API settings
     binance_api_key: SecretStr
     binance_api_secret: SecretStr
+    trading_symbol: str = "BTCUSDT"  # Default trading pair
 
     # Database settings
     database_url: PostgresDsn
