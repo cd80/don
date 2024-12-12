@@ -7,7 +7,7 @@ including API keys, database settings, and other parameters.
 from pathlib import Path
 from typing import Optional
 
-from pydantic import PostgresDsn, SecretStr, validator
+from pydantic import PostgresDsn, SecretStr, field_validator, ConfigDict
 from pydantic_settings import BaseSettings
 from rich.console import Console
 
@@ -33,12 +33,14 @@ class Settings(BaseSettings):
     dashboard_host: str = "localhost"
     dashboard_port: int = 8501
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        protected_namespaces = ('settings_',)
+    model_config = ConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        protected_namespaces=('settings_',),
+        validate_all=True
+    )
 
-    @validator("checkpoint_dir")
+    @field_validator("checkpoint_dir")
     def validate_checkpoint_dir(cls, v: Path) -> Path:
         """Ensure checkpoint directory exists."""
         v.mkdir(parents=True, exist_ok=True)

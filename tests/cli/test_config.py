@@ -26,7 +26,10 @@ def test_check_completeness_success(mock_env_vars):
 
 def test_check_completeness_failure(monkeypatch):
     """Test configuration completeness check with missing settings."""
+    # Clear all required environment variables
     monkeypatch.delenv('BINANCE_API_KEY', raising=False)
+    monkeypatch.delenv('BINANCE_API_SECRET', raising=False)
+    monkeypatch.delenv('DATABASE_URL', raising=False)
     with pytest.raises(Exception):
         Settings()
 
