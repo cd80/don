@@ -123,7 +123,7 @@ class TechnicalIndicators(BaseFeatureCalculator):
             tp_vol = (typical_price[mask] * volume[mask]).cumsum()
             vol = volume[mask].cumsum()
             daily_vwap = tp_vol / vol
-            vwap[mask] = np.minimum(daily_vwap, high[mask])
+            vwap[mask] = np.minimum(np.maximum(daily_vwap, low[mask]), high[mask])
         return vwap
 
     def _calculate_stochastic(self, high: pd.Series, low: pd.Series,
