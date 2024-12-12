@@ -28,7 +28,7 @@ def test_check_completeness_failure(monkeypatch):
     """Test configuration completeness check with missing settings."""
     monkeypatch.delenv('BINANCE_API_KEY', raising=False)
     with pytest.raises(Exception):
-        load_settings()
+        Settings()
 
 @pytest.mark.asyncio
 async def test_check_database_connection():

@@ -17,26 +17,26 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     # Binance API settings
-    binance_api_key: SecretStr
-    binance_api_secret: SecretStr
+    binance_api_key: SecretStr  # Required, no default
+    binance_api_secret: SecretStr  # Required, no default
     trading_symbol: str = "BTCUSDT"  # Default trading pair
 
     # Database settings
-    database_url: PostgresDsn
+    database_url: PostgresDsn  # Required, no default
 
     # Feature calculation settings
     feature_update_interval: int = 3600  # seconds
     technical_indicators_enabled: bool = True
 
     # Training settings
-    checkpoint_dir: Path = Path("checkpoints")  # Renamed to avoid model_ prefix
-    dashboard_host: str = "localhost"  # Added dashboard host
+    checkpoint_dir: Path = Path("checkpoints")
+    dashboard_host: str = "localhost"
     dashboard_port: int = 8501
 
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
-        protected_namespaces = ('settings_',)  # Override default protected namespaces
+        protected_namespaces = ('settings_',)
 
     @validator("checkpoint_dir")
     def validate_checkpoint_dir(cls, v: Path) -> Path:
