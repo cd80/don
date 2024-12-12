@@ -51,10 +51,16 @@ class TechnicalIndicators(BaseFeatureCalculator):
     def _calculate_rsi(self, prices: pd.Series, period: int = 14) -> pd.Series:
         """Calculate Relative Strength Index."""
         delta = prices.diff()
-        gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
-        rs = gain / loss
-        return 100 - (100 / (1 + rs))
+        gains = pd.Series(0, index=prices.index)
+        losses = pd.Series(0, index=prices.index)
+        gains[delta > 0] = delta[delta > 0]
+        losses[delta < 0] = -delta[delta < 0]
+        avg_gains = gains.rolling(window=period, min_periods=period).mean()
+        avg_losses = losses.rolling(window=period, min_periods=period).mean()
+        rs = avg_gains / avg_losses
+        rsi = 100 - (100 / (1 + rs))
+        rsi.iloc[:period] = 50
+        return rsi
 
     def _calculate_macd(self, prices: pd.Series,
                        fast_period: int = 12,
@@ -106,9 +112,9 @@ class TechnicalIndicators(BaseFeatureCalculator):
                        close: pd.Series, volume: pd.Series) -> pd.Series:
         """Calculate Volume Weighted Average Price (VWAP)."""
         typical_price = (high + low + close) / 3
-        vwap = (typical_price * volume).cumsum() / volume.cumsum()
-        vwap = np.minimum(vwap, high)
-        vwap = np.maximum(vwap, low)
+        cumulative_tp_vol = (typical_price * volume).cumsum()
+        cumulative_vol = volume.cumsum()
+        vwap = cumulative_tp_vol / cumulative_vol
         return vwap
 
     def _calculate_stochastic(self, high: pd.Series, low: pd.Series,
