@@ -2,6 +2,7 @@
 
 import pytest
 from unittest.mock import Mock, patch
+from pydantic import ValidationError
 
 from don.cli.config import Settings, load_settings
 
@@ -30,7 +31,7 @@ def test_check_completeness_failure(monkeypatch):
     monkeypatch.delenv('BINANCE_API_KEY', raising=False)
     monkeypatch.delenv('BINANCE_API_SECRET', raising=False)
     monkeypatch.delenv('DATABASE_URL', raising=False)
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         Settings()
 
 @pytest.mark.asyncio

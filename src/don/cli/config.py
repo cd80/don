@@ -37,7 +37,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         protected_namespaces=('settings_',),
-        validate_all=True
+        validate_default=True
     )
 
     @field_validator("checkpoint_dir")
