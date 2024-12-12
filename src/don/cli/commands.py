@@ -22,11 +22,12 @@ from sqlalchemy.orm import Session, sessionmaker
 from .config import Settings, load_settings
 from .logging import (console, get_progress, init_logging, log_error, log_info,
                      log_success, log_warning, status)
-from ..data.binance import BinanceDataCollector
 
-# Use mock for testing if TEST_MODE is set
+# Import real or mock BinanceDataCollector based on TEST_MODE
 if os.getenv("TEST_MODE"):
-    from ...tests.mocks.binance import MockBinanceDataCollector as BinanceDataCollector
+    from tests.mocks.binance import MockBinanceDataCollector as BinanceDataCollector
+else:
+    from ..data.binance import BinanceDataCollector
 
 from ..database.models import Base
 from ..features.technical import TechnicalIndicators
