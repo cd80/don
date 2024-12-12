@@ -8,6 +8,7 @@ This module contains the implementation of all CLI commands including:
 """
 
 import asyncio
+import os
 import signal
 import sys
 from pathlib import Path
@@ -22,6 +23,11 @@ from .config import Settings, load_settings
 from .logging import (console, get_progress, init_logging, log_error, log_info,
                      log_success, log_warning, status)
 from ..data.binance import BinanceDataCollector
+
+# Use mock for testing if TEST_MODE is set
+if os.getenv("TEST_MODE"):
+    from ...tests.mocks.binance import MockBinanceDataCollector as BinanceDataCollector
+
 from ..database.models import Base
 from ..features.technical import TechnicalIndicators
 from ..rl.env import TradingEnvironment
