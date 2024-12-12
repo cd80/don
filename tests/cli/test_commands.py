@@ -176,25 +176,39 @@ async def test_feature_all():
         mock_session.commit.assert_called_once()
         assert "All features calculated successfully" in result.stdout
 
-@pytest.mark.asyncio
-async def test_train_start():
-    """Test 'don train start' command."""
+def test_train_start():
+    """Test 'train start' command."""
     mock_settings = Mock(spec=Settings)
+    mock_settings.checkpoint_dir = "/tmp/don/checkpoints"
+
+    # Mock multiprocessing.Process for dashboard
+    mock_process = Mock()
+    mock_process.is_alive.return_value = True
+
     with patch('don.cli.commands.load_settings', return_value=mock_settings), \
-         patch('don.cli.commands.TradingEnvironment') as mock_env:
+         patch('don.cli.commands.TradingEnvironment') as mock_env, \
+         patch('multiprocessing.Process', return_value=mock_process), \
+         patch('time.sleep'):  # Mock sleep to speed up test
+
+        # Set up environment mock
         instance = mock_env.return_value
         instance.action_space = Mock()
-        instance.action_space.sample = Mock()
+        instance.action_space.sample = Mock(return_value=0)
+        instance.step = Mock(return_value=(None, 0, False, {}))
+        instance.reset = Mock()
 
-        # Set up step to raise KeyboardInterrupt after printing message
-        def step_side_effect(*args, **kwargs):
-            if not hasattr(step_side_effect, 'called'):
-                step_side_effect.called = True
-                return None
-            raise KeyboardInterrupt()
-        instance.step = Mock(side_effect=step_side_effect)
+        # Run command
+        result = runner.invoke(app, ["train", "--start"])
 
-        result = runner.invoke(app, ['train', '--start'])
+        # Verify result
         assert result.exit_code == 0
-        assert "Training started" in result.stdout
-        assert "Training stopped by user" in result.stdout
+        assert "Starting training process" in result.stdout
+
+        # Verify dashboard process was started
+        mock_process.start.assert_called_once()
+
+def test_train_without_start():
+    """Test train command without --start flag."""
+    result = runner.invoke(app, ["train"])
+    assert result.exit_code == 1
+    assert "Please use --start flag to start training" in result.stdout

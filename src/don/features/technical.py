@@ -200,11 +200,18 @@ class TechnicalIndicators(BaseFeatureCalculator):
         # Calculate DM
         up_move = high - high.shift(1)
         down_move = low.shift(1) - low
-        plus_dm = pd.Series(0, index=high.index)
-        minus_dm = pd.Series(0, index=high.index)
+        plus_dm = pd.Series(0.0, index=high.index, dtype=float)  # Initialize as float
+        minus_dm = pd.Series(0.0, index=high.index, dtype=float)  # Initialize as float
 
-        plus_dm[((up_move > down_move) & (up_move > 0))] = up_move
-        minus_dm[((down_move > up_move) & (down_move > 0))] = down_move
+        # Use numpy where for vectorized operations
+        plus_dm = pd.Series(
+            np.where((up_move > down_move) & (up_move > 0), up_move, 0.0),
+            index=high.index
+        )
+        minus_dm = pd.Series(
+            np.where((down_move > up_move) & (down_move > 0), down_move, 0.0),
+            index=high.index
+        )
 
         # Calculate DI
         plus_di = 100 * plus_dm.ewm(span=period, min_periods=period).mean() / atr

@@ -7,11 +7,12 @@ This module contains the implementation of all CLI commands including:
 - train: Control model training and dashboard
 """
 
-import asyncio
 import os
-import signal
 import sys
-from pathlib import Path
+import time
+import signal
+import subprocess
+import multiprocessing
 from typing import Optional
 
 import typer
@@ -194,42 +195,60 @@ def feature(
 
 @app.command()
 def train(
-    start: bool = typer.Option(
-        False,
-        "--start",
-        help="Start RL training and run dashboard webserver",
-    )
-) -> None:
-    """Control model training and dashboard."""
+    start: bool = typer.Option(False, "--start", help="Start training and dashboard"),
+):
+    """Start RL training and run dashboard webserver in background."""
+    if not start:
+        log_error("Please use --start flag to start training")
+        raise typer.Exit(1)
+
     try:
+        # Set up signal handler for graceful shutdown
+        def signal_handler(signum, frame):
+            log_warning("\nTraining stopped by user")
+            if 'dashboard_process' in globals():
+                dashboard_process.terminate()
+            sys.exit(0)
+
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
+
+        # Load settings and initialize environment
         settings = load_settings()
+        env = TradingEnvironment()
 
-        if start:
-            log_info("Training started. Dashboard available at http://localhost:8501")
-            with status("Starting training dashboard...") as st:
-                env = TradingEnvironment()
-                st.update("Training environment initialized")
+        # Start dashboard in background
+        global dashboard_process
+        dashboard_process = multiprocessing.Process(
+            target=lambda: subprocess.run(
+                ["streamlit", "run",
+                 os.path.join(os.path.dirname(__file__), "..", "dashboard", "app.py"),
+                 "--server.port", str(settings.dashboard_port),
+                 "--server.address", settings.dashboard_host],
+                check=True
+            )
+        )
+        dashboard_process.start()
+        log_success(f"Dashboard started at http://{settings.dashboard_host}:{settings.dashboard_port}")
 
-                def signal_handler(sig, frame):
-                    log_info("Shutting down training...")
-                    sys.exit(0)
+        # Start training
+        log_info("Training started")
+        while True:
+            # Placeholder training loop
+            state = env.reset()
+            action = env.action_space.sample()
+            state, reward, done, info = env.step(action)
+            time.sleep(1)  # Prevent CPU overload in test mode
 
-                signal.signal(signal.SIGINT, signal_handler)
-                signal.signal(signal.SIGTERM, signal_handler)
-
-                try:
-                    while True:
-                        env.step(env.action_space.sample())
-                except KeyboardInterrupt:
-                    log_info("Training stopped by user")
-        else:
-            log_warning("Please use --start to begin training")
-            raise typer.Exit(1)
-
-    except typer.Exit:
-        raise
+    except KeyboardInterrupt:
+        log_warning("\nTraining stopped by user")
+        if 'dashboard_process' in globals():
+            dashboard_process.terminate()
+        raise typer.Exit(0)
     except Exception as e:
         log_error(f"Training failed: {str(e)}")
+        if 'dashboard_process' in globals():
+            dashboard_process.terminate()
         raise typer.Exit(1)
 
 def main():
