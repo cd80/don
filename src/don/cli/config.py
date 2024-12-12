@@ -7,7 +7,8 @@ including API keys, database settings, and other parameters.
 from pathlib import Path
 from typing import Optional
 
-from pydantic import BaseSettings, PostgresDsn, SecretStr, validator
+from pydantic import PostgresDsn, SecretStr, validator
+from pydantic_settings import BaseSettings
 from rich.console import Console
 
 console = Console()
