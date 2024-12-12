@@ -121,10 +121,10 @@ class TechnicalIndicators(BaseFeatureCalculator):
         vol = volume.cumsum()
         vwap = tp_vol / vol
 
-        # Ensure VWAP stays within price bounds for each period
-        high_cummax = high.expanding().max()
-        low_cummin = low.expanding().min()
-        vwap = np.minimum(np.maximum(vwap, low_cummin), high_cummax)
+        # Ensure VWAP stays within recent high/low bounds (4-hour window)
+        high_max = high.rolling(window=4, min_periods=1).max()
+        low_min = low.rolling(window=4, min_periods=1).min()
+        vwap = np.minimum(np.maximum(vwap, low_min), high_max)
         return vwap
 
     def _calculate_stochastic(self, high: pd.Series, low: pd.Series,
