@@ -55,7 +55,7 @@ class DiscreteActionSpace:
             return len(self.positions) - 1
 
         # For positions closer to extremes, map to extremes
-        if abs(position) >= 0.75:
+        if abs(position) >= 0.6:
             return 0 if position < 0 else len(self.positions) - 1
 
         # For middle range positions, find closest position by absolute distance
