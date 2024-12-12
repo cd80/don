@@ -29,6 +29,10 @@ class TechnicalIndicators(BaseFeatureCalculator):
         df['bb_middle'] = bollinger['middle']
         df['bb_lower'] = bollinger['lower']
 
+        # Volume indicators
+        df['obv'] = self._calculate_obv(df['close'], df['volume'])
+        df['vwap'] = self._calculate_vwap(df['high'], df['low'], df['close'], df['volume'])
+
         return df
 
     def _calculate_sma(self, series: pd.Series, window: int) -> pd.Series:
@@ -72,3 +76,26 @@ class TechnicalIndicators(BaseFeatureCalculator):
             'middle': middle,
             'lower': lower
         }
+
+    def _calculate_obv(self, close: pd.Series, volume: pd.Series) -> pd.Series:
+        """Calculate On-Balance Volume (OBV)."""
+        close_diff = close.diff()
+        obv = pd.Series(index=close.index, dtype=float)
+        obv.iloc[0] = volume.iloc[0]
+
+        for i in range(1, len(close)):
+            if close_diff.iloc[i] > 0:
+                obv.iloc[i] = obv.iloc[i-1] + volume.iloc[i]
+            elif close_diff.iloc[i] < 0:
+                obv.iloc[i] = obv.iloc[i-1] - volume.iloc[i]
+            else:
+                obv.iloc[i] = obv.iloc[i-1]
+
+        return obv
+
+    def _calculate_vwap(self, high: pd.Series, low: pd.Series,
+                       close: pd.Series, volume: pd.Series) -> pd.Series:
+        """Calculate Volume Weighted Average Price (VWAP)."""
+        typical_price = (high + low + close) / 3
+        vwap = (typical_price * volume).cumsum() / volume.cumsum()
+        return vwap
