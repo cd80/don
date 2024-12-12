@@ -2,7 +2,7 @@
 
 import pytest
 from unittest.mock import Mock, patch
-from pydantic import ValidationError
+from pydantic_core import ValidationError
 
 from don.cli.config import Settings, load_settings
 
