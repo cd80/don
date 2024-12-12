@@ -215,7 +215,37 @@ def train(
 
         # Load settings and initialize environment
         settings = load_settings()
-        env = TradingEnvironment()
+
+        # Load market data and features from database
+        engine = create_engine(str(settings.database_url))
+        Session = sessionmaker(bind=engine)
+        session = Session()
+
+        with status("Loading training data...") as st:
+            # Get market data and features
+            data = pd.read_sql_query(
+                f"""
+                SELECT m.timestamp, m.open, m.high, m.low, m.close, m.volume,
+                       f.sma_20, f.rsi, f.macd, f.bb_upper, f.bb_lower,
+                       f.obv, f.vwap, f.adx
+                FROM market_data m
+                LEFT JOIN technical_features f ON m.timestamp = f.timestamp
+                WHERE m.symbol = '{settings.trading_symbol}'
+                ORDER BY m.timestamp
+                """,
+                session.bind,
+                parse_dates=['timestamp']
+            )
+
+            if data.empty:
+                log_error("No training data available")
+                raise typer.Exit(1)
+
+            # Initialize environment with data
+            st.update("Initializing trading environment...")
+            from ..rl.actions import DiscreteActionSpace
+            action_space = DiscreteActionSpace()
+            env = TradingEnvironment(data=data, action_space=action_space)
 
         # Start dashboard in background
         global dashboard_process
@@ -233,12 +263,14 @@ def train(
 
         # Start training
         log_info("Training started")
-        while True:
-            # Placeholder training loop
-            state = env.reset()
-            action = env.action_space.sample()
-            state, reward, done, info = env.step(action)
-            time.sleep(1)  # Prevent CPU overload in test mode
+        with Progress() as progress:
+            task = progress.add_task("[cyan]Training...", total=None)
+            while True:
+                state = env.reset()
+                action = env.action_space.sample()
+                state, reward, done, info = env.step(action)
+                progress.update(task, advance=1)
+                time.sleep(1)  # Prevent CPU overload in test mode
 
     except KeyboardInterrupt:
         log_warning("\nTraining stopped by user")
@@ -250,6 +282,9 @@ def train(
         if 'dashboard_process' in globals():
             dashboard_process.terminate()
         raise typer.Exit(1)
+    finally:
+        if 'session' in locals():
+            session.close()
 
 def main():
     """Entry point for the CLI."""
