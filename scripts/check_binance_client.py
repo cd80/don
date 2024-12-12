@@ -1,5 +1,5 @@
 from binance.client import Client
-from binance.websockets import BinanceSocketManager
+from binance.streams import BinanceWebSocketApiManager
 from binance.exceptions import BinanceAPIException
 import inspect
 from unittest.mock import Mock, call
@@ -12,13 +12,13 @@ def main():
         if not attr.startswith('_'):
             print(f'  {attr}')
 
-    # Print BinanceSocketManager initialization
-    print('\nBinanceSocketManager.__init__:')
+    # Print BinanceWebSocketApiManager initialization
+    print('\nBinanceWebSocketApiManager.__init__:')
     try:
-        print(inspect.getsource(BinanceSocketManager.__init__))
+        print(inspect.getsource(BinanceWebSocketApiManager.__init__))
     except (TypeError, OSError):
         print('Source not available, printing signature:')
-        print(inspect.signature(BinanceSocketManager.__init__))
+        print(inspect.signature(BinanceWebSocketApiManager.__init__))
 
     # Create mock client with basic attributes
     mock_client = Mock(spec=Client)
@@ -30,8 +30,8 @@ def main():
 
     # Try to initialize socket manager
     try:
-        bsm = BinanceSocketManager(mock_client)
-        print('\nSuccessfully created BinanceSocketManager')
+        bsm = BinanceWebSocketApiManager(mock_client)
+        print('\nSuccessfully created BinanceWebSocketApiManager')
         print('Used attributes:', mock_client.mock_calls)
     except Exception as e:
         print('\nException during initialization:')

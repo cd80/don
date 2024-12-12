@@ -4,7 +4,7 @@ from datetime import datetime
 import asyncio
 from binance.client import Client
 from binance.enums import *
-from binance import BinanceSocketManager
+from binance.streams import BinanceWebSocketApiManager
 from binance.exceptions import BinanceAPIException
 from .base import DataCollector
 
@@ -21,7 +21,7 @@ class BinanceDataCollector(DataCollector):
         """
         self.client = Client(api_key, api_secret)
         self.symbol = symbol.upper()
-        self.bsm = BinanceSocketManager(self.client)
+        self.bsm = BinanceWebSocketApiManager(self.client)
         self._trade_callbacks: List[Callable] = []
         self._ws = None
 
@@ -109,13 +109,13 @@ class BinanceDataCollector(DataCollector):
 
     async def start_realtime_collection(self) -> None:
         """Start real-time data collection."""
-        self._ws = self.bsm.start_trade_socket(self.symbol, self._handle_trade_socket)
-        await self.bsm.start()
+        self._ws = self.bsm.create_stream(['trade'], [self.symbol])
+        await asyncio.sleep(1)  # Allow connection to establish
 
     async def stop_realtime_collection(self) -> None:
         """Stop real-time data collection."""
         if self._ws:
-            await self.bsm.stop()
+            self.bsm.stop_stream(self._ws)
             self._ws = None
 
     def _convert_timestamp(self, timestamp: int) -> pd.Timestamp:
@@ -159,7 +159,7 @@ class BinanceDataCollector(DataCollector):
             callback: Function to handle incoming trade data
         """
         self._trade_callbacks.append(callback)
-        self.bsm.start_trade_socket(self.symbol, self._handle_trade_socket)
+        self._ws = self.bsm.create_stream(['trade'], [self.symbol])
 
     async def _handle_trade_socket(self, msg: Dict[str, Any]) -> None:
         """Handle incoming trade socket messages."""

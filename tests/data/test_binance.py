@@ -5,7 +5,7 @@ import numpy as np
 from datetime import datetime, timedelta
 from binance.client import Client
 from binance.exceptions import BinanceAPIException
-from binance.websockets import BinanceSocketManager
+from binance.streams import BinanceWebSocketApiManager
 from don.data.binance import BinanceDataCollector
 from don.data.base import DataCollector
 
@@ -49,9 +49,8 @@ def mock_binance_client():
 @pytest.fixture
 def mock_socket_manager():
     mock = AsyncMock()
-    mock.start_trade_socket.return_value = "ws_connection"
-    mock.start = AsyncMock()
-    mock.stop = AsyncMock()
+    mock.create_stream.return_value = "test_stream"
+    mock.stop_stream.return_value = None
     return mock
 
 @patch('don.data.binance.Client')
@@ -94,7 +93,7 @@ async def test_historical_data_collection(mock_client_class, mock_binance_client
     ])
 
 @patch('don.data.binance.Client')
-@patch('don.data.binance.BinanceSocketManager')
+@patch('don.data.binance.BinanceWebSocketApiManager')
 @pytest.mark.asyncio
 async def test_realtime_data_collection(mock_socket_manager_class, mock_client_class,
                                         mock_binance_client, mock_socket_manager):
@@ -108,14 +107,12 @@ async def test_realtime_data_collection(mock_socket_manager_class, mock_client_c
     )
 
     await collector.start_realtime_collection()
-    mock_socket_manager.start_trade_socket.assert_called_once_with(
-        "BTCUSDT",
-        collector._handle_trade_socket
+    mock_socket_manager.create_stream.assert_called_once_with(
+        ['trade'], ['BTCUSDT']
     )
-    mock_socket_manager.start.assert_called_once()
 
     await collector.stop_realtime_collection()
-    mock_socket_manager.stop.assert_called_once()
+    mock_socket_manager.stop_stream.assert_called_once_with("test_stream")
 
     trade_data = {
         "e": "trade",
