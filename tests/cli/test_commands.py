@@ -225,7 +225,7 @@ def test_train_start():
          patch('don.cli.commands.create_engine', return_value=mock_engine), \
          patch('don.cli.commands.sessionmaker', return_value=mock_session_maker), \
          patch('pandas.read_sql_query', return_value=mock_data), \
-         patch('don.cli.commands.DiscreteActionSpace', return_value=mock_action_space), \
+         patch('don.rl.actions.DiscreteActionSpace', return_value=mock_action_space), \
          patch('don.cli.commands.TradingEnvironment') as mock_env, \
          patch('multiprocessing.Process', return_value=mock_process), \
          patch('subprocess.run', mock_subprocess_run), \
