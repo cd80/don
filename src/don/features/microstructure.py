@@ -22,7 +22,7 @@ class MarketMicrostructureFeatures(BaseFeatureCalculator):
     insight into market dynamics, liquidity, and trading behavior.
     """
 
-    def _calculate_order_imbalance(self, bids: pd.DataFrame, asks: pd.DataFrame) -> float:
+    def _calculate_order_imbalance(self, bids: pd.DataFrame, asks: pd.DataFrame) -> pd.Series:
         """Calculate order book imbalance using price-weighted volumes.
 
         Args:
@@ -30,154 +30,194 @@ class MarketMicrostructureFeatures(BaseFeatureCalculator):
             asks: DataFrame containing ask orders with 'price' and 'quantity' columns
 
         Returns:
-            float: Order book imbalance ratio in range [-1, 1]
-                  Positive values indicate more buying pressure
-                  Negative values indicate more selling pressure
+            pd.Series: Order book imbalance ratio in range [-1, 1]
+                      Positive values indicate more buying pressure
+                      Negative values indicate more selling pressure
         """
-        bid_volume = (bids['price'] * bids['quantity']).sum()
-        ask_volume = (asks['price'] * asks['quantity']).sum()
+        if bids.empty and asks.empty:
+            return pd.Series(0.0, index=bids.index.get_level_values(0).unique() if not bids.empty else asks.index.get_level_values(0).unique())
 
-        # Handle edge case where both volumes are 0
-        if bid_volume == 0 and ask_volume == 0:
-            return 0.0
+        # Get unique timestamps
+        timestamps = pd.Index(set(bids.index.get_level_values(0).union(asks.index.get_level_values(0))))
 
-        return (bid_volume - ask_volume) / (bid_volume + ask_volume)
+        # Initialize result series
+        imbalance = pd.Series(0.0, index=timestamps)
 
-    def _calculate_trade_flow(self, trades: pd.DataFrame, window: int = 100) -> pd.Series:
+        # Calculate price-weighted volumes for each timestamp
+        for ts in timestamps:
+            ts_bids = bids.loc[ts] if ts in bids.index.get_level_values(0) else pd.DataFrame()
+            ts_asks = asks.loc[ts] if ts in asks.index.get_level_values(0) else pd.DataFrame()
+
+            bid_volume = (ts_bids['price'] * ts_bids['quantity']).sum() if not ts_bids.empty else 0
+            ask_volume = (ts_asks['price'] * ts_asks['quantity']).sum() if not ts_asks.empty else 0
+
+            total_volume = bid_volume + ask_volume
+            if total_volume > 0:
+                imbalance[ts] = (bid_volume - ask_volume) / total_volume
+
+        return imbalance
+
+    def _calculate_trade_flow(self, df: pd.DataFrame, window: int = 100) -> pd.Series:
         """Calculate trade flow imbalance using rolling window.
 
         Args:
-            trades: DataFrame containing trade data with columns:
-                   - quantity: Trade size
-                   - is_buyer_maker: Boolean indicating if buyer was maker
+            df: DataFrame containing trade data with columns:
+                - quantity: Trade size
+                - is_buyer_maker: True if buyer was maker
             window: Rolling window size for volume aggregation
 
         Returns:
-            pd.Series: Trade flow imbalance in range [-1, 1]
+            pd.Series: Trade flow imbalance ratio in range [-1, 1]
                       Positive values indicate more aggressive buying
                       Negative values indicate more aggressive selling
         """
-        # Handle empty trades DataFrame
-        if trades.empty:
-            return pd.Series(index=trades.index, dtype=float)
+        # Get unique timestamps
+        timestamps = df.index.get_level_values(0).unique()
 
-        # Calculate taker buy and sell volumes
-        buy_volume = trades[~trades['is_buyer_maker']]['quantity'].rolling(window, min_periods=1).sum()
-        sell_volume = trades[trades['is_buyer_maker']]['quantity'].rolling(window, min_periods=1).sum()
+        # Initialize result series
+        imbalance = pd.Series(0.0, index=timestamps)
 
-        # Handle edge case where both volumes are 0
-        total_volume = buy_volume + sell_volume
-        return pd.Series(
-            np.where(total_volume > 0, (buy_volume - sell_volume) / total_volume, 0),
-            index=trades.index
-        )
+        # Calculate maker/taker volumes for each timestamp
+        for ts in timestamps:
+            ts_data = df.loc[ts]
+
+            # Calculate volumes for this timestamp
+            maker_mask = ts_data['is_buyer_maker']
+            taker_mask = ~ts_data['is_buyer_maker']
+
+            maker_volume = ts_data.loc[maker_mask, 'quantity'].sum() if any(maker_mask) else 0
+            taker_volume = ts_data.loc[taker_mask, 'quantity'].sum() if any(taker_mask) else 0
+
+            total_volume = maker_volume + taker_volume
+            if total_volume > 0:
+                imbalance[ts] = (maker_volume - taker_volume) / total_volume
+
+        # Apply rolling window
+        return imbalance.rolling(window=window, min_periods=1).mean()
 
     def _calculate_realized_volatility(self, prices: pd.Series, window: int = 100) -> pd.Series:
         """Calculate realized volatility using rolling window of log returns.
 
         Args:
-            prices: Series of asset prices
+            prices: Series of close prices
             window: Rolling window size for volatility calculation
 
         Returns:
-            pd.Series: Annualized realized volatility
+            pd.Series: Realized volatility values
         """
-        # Handle empty or single price point
-        if len(prices) < 2:
-            return pd.Series(index=prices.index, dtype=float)
+        # Get unique timestamps and last price for each timestamp
+        if isinstance(prices.index, pd.MultiIndex):
+            # For multi-index, get the last price for each timestamp
+            timestamps = prices.index.get_level_values(0).unique()
+            unique_prices = prices.groupby(level=0).last()
+        else:
+            timestamps = prices.index
+            unique_prices = prices
+
+        # Handle empty or insufficient data
+        if len(unique_prices) < 2:
+            return pd.Series(0.0, index=timestamps)
 
         # Calculate log returns
-        log_returns = np.log(prices / prices.shift(1))
+        log_returns = np.log(unique_prices / unique_prices.shift(1))
+        log_returns = log_returns.fillna(0)  # Fill NaN from first observation
 
-        # Calculate annualized volatility (sqrt of window to annualize)
-        return np.sqrt(log_returns.rolling(window, min_periods=2).var() * window)
+        # Calculate rolling standard deviation
+        volatility = log_returns.rolling(window=window, min_periods=1).std()
+        volatility = volatility.fillna(0)  # Fill any remaining NaN values
 
-    def _calculate_liquidation_impact(self, liquidations: pd.DataFrame, window: int = 100) -> Dict[str, pd.Series]:
-        """Calculate liquidation impact features using rolling window.
+        return volatility
+
+    def _calculate_liquidation_impact(
+        self, liquidations: pd.DataFrame, window: int = 100
+    ) -> dict[str, pd.Series]:
+        """Calculate liquidation impact features.
 
         Args:
-            liquidations: DataFrame containing liquidation data with columns:
-                         - quantity: Liquidation size
-                         - side: 'long' or 'short' indicating liquidation type
-            window: Rolling window size for volume aggregation
+            liquidations: DataFrame with liquidation data containing 'quantity' and 'side' columns
+            window: Rolling window size for volume calculations
 
         Returns:
-            Dict[str, pd.Series]: Dictionary containing:
-                - long_liquidation_volume: Rolling sum of long liquidations
-                - short_liquidation_volume: Rolling sum of short liquidations
-                - liquidation_imbalance: Normalized difference between long and short
+            dict: Dictionary containing:
+                - long_liquidation_volume: Rolling sum of long liquidation volumes
+                - short_liquidation_volume: Rolling sum of short liquidation volumes
+                - liquidation_imbalance: Normalized difference between long and short volumes
         """
-        # Handle empty liquidations DataFrame
-        if liquidations.empty:
-            empty_series = pd.Series(index=liquidations.index, dtype=float)
-            return {
-                'long_liquidation_volume': empty_series,
-                'short_liquidation_volume': empty_series,
-                'liquidation_imbalance': empty_series
-            }
+        # Get unique timestamps
+        timestamps = liquidations.index.get_level_values(0).unique()
 
-        # Calculate long and short liquidation volumes
-        long_liq = liquidations[liquidations['side'] == 'long']['quantity'].rolling(
-            window, min_periods=1).sum()
-        short_liq = liquidations[liquidations['side'] == 'short']['quantity'].rolling(
-            window, min_periods=1).sum()
+        # Initialize result series
+        long_volumes = pd.Series(0.0, index=timestamps)
+        short_volumes = pd.Series(0.0, index=timestamps)
+
+        # Calculate volumes for each timestamp
+        for ts in timestamps:
+            ts_data = liquidations.loc[ts]
+
+            # Sum liquidation volumes by side
+            long_mask = ts_data['side'] == 'long'
+            short_mask = ts_data['side'] == 'short'
+
+            long_volumes[ts] = ts_data.loc[long_mask, 'quantity'].sum() if any(long_mask) else 0
+            short_volumes[ts] = ts_data.loc[short_mask, 'quantity'].sum() if any(short_mask) else 0
+
+        # Calculate rolling sums
+        long_rolling = long_volumes.rolling(window=window, min_periods=1).sum()
+        short_rolling = short_volumes.rolling(window=window, min_periods=1).sum()
 
         # Calculate imbalance
-        total_liq = long_liq + short_liq
-        imbalance = pd.Series(
-            np.where(total_liq > 0, (long_liq - short_liq) / total_liq, 0),
-            index=liquidations.index
-        )
+        total_volume = long_rolling + short_rolling
+        liquidation_imbalance = pd.Series(0.0, index=timestamps)
+        nonzero_mask = total_volume > 0
+        liquidation_imbalance[nonzero_mask] = (long_rolling - short_rolling) / total_volume
 
         return {
-            'long_liquidation_volume': long_liq,
-            'short_liquidation_volume': short_liq,
-            'liquidation_imbalance': imbalance
+            'long_liquidation_volume': long_rolling,
+            'short_liquidation_volume': short_rolling,
+            'liquidation_imbalance': liquidation_imbalance
         }
 
-    def calculate(self, data: pd.DataFrame) -> pd.DataFrame:
-        """Calculate market microstructure features from input data.
+    def calculate(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Calculate all market microstructure features.
 
         Args:
-            data: DataFrame containing market data including:
-                - orderbook snapshots (with 'side', 'price', 'quantity' columns)
-                - trade data
-                - liquidation events
+            df: DataFrame containing market data with columns:
+                - price, quantity: For order book data
+                - is_buyer_maker: For trade flow analysis
+                - close: For volatility calculation
+                - side: For liquidation analysis
 
         Returns:
-            DataFrame with calculated market microstructure features
+            pd.DataFrame: DataFrame with calculated features
         """
-        df = data.copy()
+        # Get unique timestamps for result index
+        timestamps = df.index.get_level_values(0).unique()
+        result = pd.DataFrame(index=timestamps)
 
-        # Initialize feature columns
-        df['order_imbalance'] = np.nan
-        df['trade_flow_imbalance'] = np.nan
-        df['realized_volatility'] = np.nan
-        df['long_liquidation_volume'] = np.nan
-        df['short_liquidation_volume'] = np.nan
-        df['liquidation_imbalance'] = np.nan
+        # Calculate order book imbalance if we have order book data
+        if all(col in df.columns for col in ['price', 'quantity', 'side']):
+            bids = df[df['side'] == 'bid'][['price', 'quantity']]
+            asks = df[df['side'] == 'ask'][['price', 'quantity']]
+            result['order_imbalance'] = self._calculate_order_imbalance(bids, asks)
 
-        # Calculate order book imbalance
-        if all(col in df.columns for col in ['side', 'price', 'quantity']):
-            grouped = df.groupby(df.index)
-            for timestamp, group in grouped:
-                bids = group[group['side'] == 'bid']
-                asks = group[group['side'] == 'ask']
-                df.at[timestamp, 'order_imbalance'] = self._calculate_order_imbalance(bids, asks)
+        # Calculate trade flow if we have trade data
+        if 'is_buyer_maker' in df.columns and 'quantity' in df.columns:
+            result['trade_flow_imbalance'] = self._calculate_trade_flow(df)
 
-        # Calculate trade flow imbalance
-        if all(col in df.columns for col in ['quantity', 'is_buyer_maker']):
-            df['trade_flow_imbalance'] = self._calculate_trade_flow(df)
-
-        # Calculate realized volatility
+        # Calculate volatility if we have price data
         if 'close' in df.columns:
-            df['realized_volatility'] = self._calculate_realized_volatility(df['close'])
+            result['realized_volatility'] = self._calculate_realized_volatility(df['close'])
 
-        # Calculate liquidation impact features
-        if all(col in df.columns for col in ['quantity', 'side']):
-            liquidation_features = self._calculate_liquidation_impact(df)
-            df['long_liquidation_volume'] = liquidation_features['long_liquidation_volume']
-            df['short_liquidation_volume'] = liquidation_features['short_liquidation_volume']
-            df['liquidation_imbalance'] = liquidation_features['liquidation_imbalance']
+        # Calculate liquidation features if we have liquidation data
+        if 'side' in df.columns and df['side'].isin(['long', 'short']).any():
+            liq_features = self._calculate_liquidation_impact(df)
+            result['long_liquidation_volume'] = liq_features['long_liquidation_volume']
+            result['short_liquidation_volume'] = liq_features['short_liquidation_volume']
+            result['liquidation_imbalance'] = liq_features['liquidation_imbalance']
+        else:
+            # Add empty liquidation features with proper index
+            result['long_liquidation_volume'] = pd.Series(0.0, index=result.index)
+            result['short_liquidation_volume'] = pd.Series(0.0, index=result.index)
+            result['liquidation_imbalance'] = pd.Series(0.0, index=result.index)
 
-        return df
+        return result
