@@ -5,6 +5,7 @@ including API keys, database settings, and other parameters.
 """
 
 from pathlib import Path
+import os
 from typing import Optional
 
 from pydantic import (
@@ -12,7 +13,8 @@ from pydantic import (
     PostgresDsn,
     SecretStr,
     field_validator,
-    ConfigDict
+    ConfigDict,
+    ValidationError
 )
 from pydantic_settings import BaseSettings
 from rich.console import Console
@@ -40,7 +42,7 @@ class Settings(BaseSettings):
     dashboard_port: int = 8501
 
     model_config = ConfigDict(
-        env_file=".env",
+        env_file=".env" if not bool(int(os.getenv("TEST_MODE", "0"))) else None,
         env_file_encoding="utf-8",
         protected_namespaces=('settings_',),
         validate_default=True
@@ -99,6 +101,9 @@ def load_settings() -> Settings:
     try:
         settings = Settings()
         return settings
+    except ValidationError:
+        console.print("[red]Failed to load settings: Required environment variables are missing[/red]")
+        raise
     except Exception as e:
         console.print(f"[red]Failed to load settings: {str(e)}[/red]")
         raise
