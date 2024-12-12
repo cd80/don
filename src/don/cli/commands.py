@@ -125,6 +125,10 @@ def feature(
     )
 ) -> None:
     """Calculate and manage technical indicators."""
+    if not all:
+        log_warning("Please specify --all to calculate all features")
+        raise typer.Exit(1)
+
     session = None
     try:
         settings = load_settings()
@@ -134,14 +138,9 @@ def feature(
 
         with status("Initializing feature calculation...") as st:
             calculator = TechnicalIndicators()
-
-            if all:
-                st.update("Calculating all technical indicators...")
-                calculator.calculate_all(session)
-                log_success("All features calculated successfully!")
-            else:
-                log_warning("Please specify --all to calculate all features")
-                raise typer.Exit(1)
+            st.update("Calculating all technical indicators...")
+            calculator.calculate_all(session)
+            log_success("All features calculated successfully!")
 
     except typer.Exit:
         raise
