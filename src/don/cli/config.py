@@ -23,12 +23,12 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     # Binance API settings
-    binance_api_key: SecretStr = Field(..., required=True)  # Required, no default
-    binance_api_secret: SecretStr = Field(..., required=True)  # Required, no default
+    binance_api_key: SecretStr = Field(...)  # Required, no default
+    binance_api_secret: SecretStr = Field(...)  # Required, no default
     trading_symbol: str = "BTCUSDT"  # Default trading pair
 
     # Database settings
-    database_url: PostgresDsn = Field(..., required=True)  # Required, no default
+    database_url: PostgresDsn = Field(...)  # Required, no default
 
     # Feature calculation settings
     feature_update_interval: int = 3600  # seconds
