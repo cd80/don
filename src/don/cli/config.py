@@ -7,7 +7,13 @@ including API keys, database settings, and other parameters.
 from pathlib import Path
 from typing import Optional
 
-from pydantic import PostgresDsn, SecretStr, field_validator, ConfigDict
+from pydantic import (
+    Field,
+    PostgresDsn,
+    SecretStr,
+    field_validator,
+    ConfigDict
+)
 from pydantic_settings import BaseSettings
 from rich.console import Console
 
@@ -17,12 +23,12 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     # Binance API settings
-    binance_api_key: SecretStr  # Required, no default
-    binance_api_secret: SecretStr  # Required, no default
+    binance_api_key: SecretStr = Field(..., required=True)  # Required, no default
+    binance_api_secret: SecretStr = Field(..., required=True)  # Required, no default
     trading_symbol: str = "BTCUSDT"  # Default trading pair
 
     # Database settings
-    database_url: PostgresDsn  # Required, no default
+    database_url: PostgresDsn = Field(..., required=True)  # Required, no default
 
     # Feature calculation settings
     feature_update_interval: int = 3600  # seconds
