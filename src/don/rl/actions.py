@@ -60,16 +60,14 @@ class DiscreteActionSpace:
         # Calculate base distances
         distances = np.abs(positions - position)
 
-        # Add strong bias for position preference
-        if position < -0.6:  # Strong preference for negative positions
-            distances[positions > -0.8] += 1.0
-        elif position > 0.6:  # Strong preference for positive positions
-            distances[positions < 0.8] += 1.0
-        elif position < -0.3:  # Moderate preference for negative positions
-            distances[positions > -0.4] += 0.5
-        elif position > 0.3:  # Moderate preference for positive positions
-            distances[positions < 0.4] += 0.5
+        # For positions closer to extremes, strongly prefer the extreme position
+        if abs(position) > 0.6:
+            # If target is very negative/positive, heavily bias towards extreme positions
+            extreme_idx = 0 if position < 0 else len(positions) - 1
+            if distances[extreme_idx] <= 2 * min(distances):  # Within reasonable range
+                return extreme_idx
 
+        # Otherwise, return closest position
         return int(np.argmin(distances))
 
 

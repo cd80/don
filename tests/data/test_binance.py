@@ -5,7 +5,7 @@ import numpy as np
 from datetime import datetime, timedelta
 from binance.client import Client
 from binance.exceptions import BinanceAPIException
-from binance import BinanceSocketManager
+from binance.websockets import BinanceSocketManager
 from don.data.binance import BinanceDataCollector
 from don.data.base import DataCollector
 
@@ -16,6 +16,10 @@ def mock_binance_client():
     # Mock client attributes
     client.testnet = False
     client.tld = 'com'
+    client.API_URL = 'https://api.binance.com'
+    client.STREAM_URL = 'wss://stream.binance.com:9443'
+    client.STREAM_API_URL = 'wss://stream.binance.com:9443/ws'
+    client.STREAM_TESTNET_URL = 'wss://testnet.binance.vision/ws'
 
     # Mock futures API methods
     client.futures_recent_trades.return_value = [
@@ -134,7 +138,11 @@ def test_error_handling(mock_client_class):
     error_text = '{"code":-2015,"msg":"Invalid API-key, IP, or permissions for action."}'
     mock_response = Mock(status_code=401)
     mock_client = Mock(spec=Client)
-    mock_client.tld = 'com'  # Required for BinanceSocketManager
+    mock_client.tld = 'com'
+    mock_client.API_URL = 'https://api.binance.com'
+    mock_client.STREAM_URL = 'wss://stream.binance.com:9443'
+    mock_client.STREAM_API_URL = 'wss://stream.binance.com:9443/ws'
+    mock_client.STREAM_TESTNET_URL = 'wss://testnet.binance.vision/ws'
     mock_client.ping.side_effect = BinanceAPIException(
         mock_response,  # response must be first
         401,  # status_code second

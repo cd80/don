@@ -1,5 +1,5 @@
 from binance.client import Client
-from binance.streams import BinanceSocketManager
+from binance.websockets import BinanceSocketManager
 from binance.exceptions import BinanceAPIException
 import inspect
 from unittest.mock import Mock, call
@@ -25,6 +25,8 @@ def main():
     mock_client.tld = 'com'
     mock_client.API_URL = 'https://api.binance.com'
     mock_client.STREAM_URL = 'wss://stream.binance.com:9443'
+    mock_client.STREAM_API_URL = 'wss://stream.binance.com:9443/ws'
+    mock_client.STREAM_TESTNET_URL = 'wss://testnet.binance.vision/ws'
 
     # Try to initialize socket manager
     try:

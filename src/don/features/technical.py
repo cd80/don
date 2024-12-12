@@ -122,8 +122,9 @@ class TechnicalIndicators(BaseFeatureCalculator):
         vwap = tp_vol / vol
 
         # Ensure VWAP stays within price bounds
-        vwap = np.minimum(vwap, high)
-        vwap = np.maximum(vwap, low)
+        vwap = pd.Series(index=vwap.index, data=[
+            min(max(v, l), h) for v, l, h in zip(vwap, low, high)
+        ])
         return vwap
 
     def _calculate_stochastic(self, high: pd.Series, low: pd.Series,
