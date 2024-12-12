@@ -2,7 +2,8 @@
 
 import pytest
 from typer.testing import CliRunner
-from unittest.mock import Mock, patch, MagicMock, call
+from unittest.mock import Mock, patch, MagicMock
+import pandas as pd
 
 from don.cli.commands import app
 from don.cli.config import Settings
@@ -126,23 +127,53 @@ async def test_feature_all():
     """Test 'don feature --all' command."""
     mock_settings = Mock(spec=Settings)
     mock_settings.database_url = "postgresql://user:pass@localhost/testdb"
+    mock_settings.trading_symbol = "BTCUSDT"
 
     mock_session = Mock()
     mock_session_maker = Mock()
     mock_session_maker.return_value = mock_session
     mock_engine = Mock()
+    mock_session.bind = mock_engine
+
+    # Create mock market data
+    mock_data = pd.DataFrame({
+        'timestamp': pd.date_range(start='2024-01-01', periods=5, freq='h'),
+        'open': [100.0, 101.0, 102.0, 103.0, 104.0],
+        'high': [105.0, 106.0, 107.0, 108.0, 109.0],
+        'low': [95.0, 96.0, 97.0, 98.0, 99.0],
+        'close': [102.0, 103.0, 104.0, 105.0, 106.0],
+        'volume': [1000.0, 1100.0, 1200.0, 1300.0, 1400.0]
+    })
 
     with patch('don.cli.commands.load_settings', return_value=mock_settings), \
          patch('don.cli.commands.create_engine', return_value=mock_engine), \
          patch('don.cli.commands.sessionmaker', return_value=mock_session_maker), \
+         patch('pandas.read_sql_query', return_value=mock_data), \
          patch('don.cli.commands.TechnicalIndicators') as mock_calculator:
         instance = mock_calculator.return_value
-        instance.calculate_all = Mock()
+        instance.calculate_all = Mock(return_value=pd.DataFrame({
+            'sma_20': [101.0] * 5,
+            'rsi': [60.0] * 5,
+            'macd': [0.5] * 5,
+            'macd_signal': [0.3] * 5,
+            'macd_hist': [0.2] * 5,
+            'bb_upper': [110.0] * 5,
+            'bb_middle': [105.0] * 5,
+            'bb_lower': [100.0] * 5,
+            'obv': [5000.0] * 5,
+            'vwap': [103.0] * 5,
+            'stoch_k': [70.0] * 5,
+            'stoch_d': [65.0] * 5,
+            'adx': [30.0] * 5,
+            'plus_di': [25.0] * 5,
+            'minus_di': [20.0] * 5
+        }))
 
         result = runner.invoke(app, ['feature', '--all'])
         assert result.exit_code == 0
         mock_session_maker.assert_called_once()
-        instance.calculate_all.assert_called_once_with(mock_session)
+        instance.calculate_all.assert_called_once()
+        mock_session.commit.assert_called_once()
         assert "All features calculated successfully" in result.stdout
 
 @pytest.mark.asyncio

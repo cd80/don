@@ -15,10 +15,25 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String, JSON
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
+
+class MarketData(Base):
+    """Store OHLCV market data."""
+    __tablename__ = 'market_data'
+
+    id = Column(Integer, primary_key=True)
+    timestamp = Column(DateTime, index=True, nullable=False)
+    symbol = Column(String, index=True, nullable=False)
+    open = Column(Float, nullable=False)
+    high = Column(Float, nullable=False)
+    low = Column(Float, nullable=False)
+    close = Column(Float, nullable=False)
+    volume = Column(Float, nullable=False)
+
+    def __repr__(self):
+        return f"<MarketData(symbol={self.symbol}, timestamp={self.timestamp})>"
 
 class Trade(Base):
     """Store individual trades."""
@@ -75,15 +90,14 @@ class Volume(Base):
     def __repr__(self):
         return f"<Volume(symbol={self.symbol}, timestamp={self.timestamp})>"
 
-class TechnicalIndicator(Base):
+class TechnicalFeatures(Base):
     """Store calculated technical indicators."""
-    __tablename__ = 'technical_indicators'
+    __tablename__ = 'technical_features'
 
     id = Column(Integer, primary_key=True)
     timestamp = Column(DateTime, index=True, nullable=False)
     symbol = Column(String, index=True, nullable=False)
-    # Common technical indicators
-    sma = Column(Float)
+    sma_20 = Column(Float)
     rsi = Column(Float)
     macd = Column(Float)
     macd_signal = Column(Float)
@@ -96,9 +110,11 @@ class TechnicalIndicator(Base):
     stoch_k = Column(Float)
     stoch_d = Column(Float)
     adx = Column(Float)
+    plus_di = Column(Float)
+    minus_di = Column(Float)
 
     def __repr__(self):
-        return f"<TechnicalIndicator(symbol={self.symbol}, timestamp={self.timestamp})>"
+        return f"<TechnicalFeatures(symbol={self.symbol}, timestamp={self.timestamp})>"
 
 class Model(Base):
     """Store model metadata."""
