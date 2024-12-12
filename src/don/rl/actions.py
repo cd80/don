@@ -56,18 +56,9 @@ class DiscreteActionSpace:
 
         # Find distances to all positions
         positions = np.array(self.positions)
-
-        # Calculate base distances
         distances = np.abs(positions - position)
 
-        # For positions closer to extremes, strongly prefer the extreme position
-        if abs(position) > 0.6:
-            # If target is very negative/positive, heavily bias towards extreme positions
-            extreme_idx = 0 if position < 0 else len(positions) - 1
-            if distances[extreme_idx] <= 2 * min(distances):  # Within reasonable range
-                return extreme_idx
-
-        # Otherwise, return closest position
+        # Find the closest position
         return int(np.argmin(distances))
 
 

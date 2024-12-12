@@ -13,6 +13,8 @@ def mock_binance_client():
     client = Mock(spec=Client)
 
     # Mock client attributes
+    client.API_KEY = "test_key"
+    client.API_SECRET = "test_secret"
     client.testnet = False
     client.tld = 'com'
     client.API_URL = 'https://api.binance.com'
@@ -153,11 +155,7 @@ def test_error_handling(mock_client_class):
     )
 
     with pytest.raises(ValueError):
-        collector.get_historical_data(
-            start_time=datetime.now() - timedelta(days=1),
-            end_time=datetime.now(),
-            interval="invalid"
-        )
+        collector.collect_trades(symbol="BTCUSDT")
 
     with pytest.raises(ValueError):
         BinanceDataCollector(

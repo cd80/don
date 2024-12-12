@@ -120,11 +120,6 @@ class TechnicalIndicators(BaseFeatureCalculator):
         tp_vol = (typical_price * volume).cumsum()
         vol = volume.cumsum()
         vwap = tp_vol / vol
-
-        # Ensure VWAP stays within price bounds
-        vwap = pd.Series(index=vwap.index, data=[
-            min(max(v, l), h) for v, l, h in zip(vwap, low, high)
-        ])
         return vwap
 
     def _calculate_stochastic(self, high: pd.Series, low: pd.Series,

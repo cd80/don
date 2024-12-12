@@ -26,12 +26,15 @@ class BinanceDataCollector(DataCollector):
 
     def collect_trades(self, symbol: str, limit: int = 1000) -> pd.DataFrame:
         """Collect recent trades from Binance Futures."""
-        trades = self.client.futures_recent_trades(symbol=symbol, limit=limit)
-        df = pd.DataFrame(trades)
-        df['timestamp'] = pd.to_datetime(df['time'], unit='ms')
-        return df[['timestamp', 'price', 'qty', 'isBuyerMaker']].rename(
-            columns={'qty': 'quantity', 'isBuyerMaker': 'is_buyer_maker'}
-        )
+        try:
+            trades = self.client.futures_recent_trades(symbol=symbol, limit=limit)
+            df = pd.DataFrame(trades)
+            df['timestamp'] = pd.to_datetime(df['time'], unit='ms')
+            return df[['timestamp', 'price', 'qty', 'isBuyerMaker']].rename(
+                columns={'qty': 'quantity', 'isBuyerMaker': 'is_buyer_maker'}
+            )
+        except BinanceAPIException as e:
+            raise ValueError(f"Failed to collect trades: {str(e)}")
 
     def collect_orderbook(self, symbol: str, limit: int = 100) -> pd.DataFrame:
         """Collect orderbook data from Binance Futures."""
