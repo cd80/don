@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "don"
+version = "0.1.0"
+description = "Framework for high leverage trading in bitcoin futures market"
+authors = ["Your Name <your.email@example.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+pandas = "^2.1.0"
+numpy = "^1.24.0"
+python-binance = "^1.0.19"
+gymnasium = "^0.29.0"
+torch = "^2.1.0"
+sqlalchemy = "^2.0.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+black = "^23.11.0"
+isort = "^5.12.0"
+jupyter = "^1.0.0"
