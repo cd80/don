@@ -48,14 +48,22 @@ class DiscreteActionSpace:
         Returns:
             Index of the closest valid action
         """
-        # For positions at or below the minimum, return first index
+        # Handle boundary cases first
         if position <= self.positions[0]:
             return 0
-        # For positions at or above the maximum, return last index
         if position >= self.positions[-1]:
             return len(self.positions) - 1
-        # Find closest position by absolute distance
-        return int(np.argmin(np.abs(np.array(self.positions) - position)))
+
+        # Find distances to all positions
+        positions = np.array(self.positions)
+        distances = np.abs(positions - position)
+
+        # Get indices of positions with minimum distance
+        min_dist = np.min(distances)
+        min_dist_indices = np.where(distances == min_dist)[0]
+
+        # If multiple positions have the same distance, prefer the lower index
+        return int(min_dist_indices[0])
 
 
 class ContinuousActionSpace:

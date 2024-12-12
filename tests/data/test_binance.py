@@ -51,14 +51,19 @@ def mock_socket_manager():
 def test_binance_collector_initialization(mock_binance_client):
     """Test initialization of BinanceDataCollector."""
     try:
-        collector = BinanceDataCollector(api_key="test", api_secret="test")
+        collector = BinanceDataCollector(
+            symbol="BTCUSDT",
+            api_key="test",
+            api_secret="test"
+        )
         assert collector.client is not None
         assert collector.client.tld == 'com'
     except BinanceAPIException as e:
         pytest.skip(f"Binance API unavailable: {e}")
 
 @patch('don.data.binance.Client')
-def test_historical_data_collection(mock_client_class, mock_binance_client):
+@pytest.mark.asyncio
+async def test_historical_data_collection(mock_client_class, mock_binance_client):
     mock_client_class.return_value = mock_binance_client
 
     collector = BinanceDataCollector(
@@ -70,7 +75,7 @@ def test_historical_data_collection(mock_client_class, mock_binance_client):
     end_time = datetime.now()
     start_time = end_time - timedelta(days=1)
 
-    data = collector.get_historical_data(
+    data = await collector.get_historical_data(
         start_time=start_time,
         end_time=end_time,
         interval="1h"
@@ -85,8 +90,9 @@ def test_historical_data_collection(mock_client_class, mock_binance_client):
 
 @patch('don.data.binance.Client')
 @patch('don.data.binance.BinanceSocketManager')
-def test_realtime_data_collection(mock_socket_manager_class, mock_client_class,
-                                mock_binance_client, mock_socket_manager):
+@pytest.mark.asyncio
+async def test_realtime_data_collection(mock_socket_manager_class, mock_client_class,
+                                        mock_binance_client, mock_socket_manager):
     mock_client_class.return_value = mock_binance_client
     mock_socket_manager_class.return_value = mock_socket_manager
 
@@ -110,10 +116,13 @@ def test_realtime_data_collection(mock_socket_manager_class, mock_client_class,
         "M": True
     }
 
+    await collector.start_realtime_collection()
     collector._handle_trade_socket(trade_data)
 
     assert mock_socket_manager.start_trade_socket.called
     assert mock_socket_manager.start_trade_socket.call_args[0][0] == "BTCUSDT"
+
+    await collector.stop_realtime_collection()
 
 def test_error_handling():
     collector = BinanceDataCollector(

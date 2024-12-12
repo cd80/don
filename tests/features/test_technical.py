@@ -5,7 +5,7 @@ from don.features.technical import TechnicalIndicators
 
 @pytest.fixture
 def sample_data():
-    dates = pd.date_range(start='2023-01-01', periods=100, freq='1H')
+    dates = pd.date_range(start='2023-01-01', periods=100, freq='1h')
     data = pd.DataFrame({
         'close': np.concatenate([
             np.linspace(100, 120, 50),
@@ -88,8 +88,8 @@ def test_obv_calculation(sample_data):
     assert len(obv) == len(sample_data)
     assert not pd.isna(obv).any()
 
-    uptrend_obv_change = obv[49] - obv[0]
-    downtrend_obv_change = obv[99] - obv[50]
+    uptrend_obv_change = obv.iloc[49] - obv.iloc[0]
+    downtrend_obv_change = obv.iloc[99] - obv.iloc[50]
     assert uptrend_obv_change > 0
     assert downtrend_obv_change < 0
 

@@ -49,14 +49,17 @@ class TechnicalIndicators(BaseFeatureCalculator):
         return series.rolling(window=window).mean()
 
     def _calculate_rsi(self, prices: pd.Series, period: int = 14) -> pd.Series:
-        """Calculate Relative Strength Index."""
+        """Calculate Relative Strength Index using Wilder's smoothing method."""
         delta = prices.diff()
-        gains = pd.Series(0, index=prices.index)
-        losses = pd.Series(0, index=prices.index)
-        gains[delta > 0] = delta[delta > 0]
-        losses[delta < 0] = -delta[delta < 0]
-        avg_gains = gains.rolling(window=period, min_periods=period).mean()
-        avg_losses = losses.rolling(window=period, min_periods=period).mean()
+        gains = delta.where(delta > 0, 0)
+        losses = -delta.where(delta < 0, 0)
+        avg_gains = pd.Series(0.0, index=prices.index)
+        avg_losses = pd.Series(0.0, index=prices.index)
+        avg_gains.iloc[period] = gains.iloc[1:period+1].mean()
+        avg_losses.iloc[period] = losses.iloc[1:period+1].mean()
+        for i in range(period + 1, len(prices)):
+            avg_gains.iloc[i] = ((avg_gains.iloc[i-1] * (period-1)) + gains.iloc[i]) / period
+            avg_losses.iloc[i] = ((avg_losses.iloc[i-1] * (period-1)) + losses.iloc[i]) / period
         rs = avg_gains / avg_losses
         rsi = 100 - (100 / (1 + rs))
         rsi.iloc[:period] = 50
@@ -112,10 +115,9 @@ class TechnicalIndicators(BaseFeatureCalculator):
                        close: pd.Series, volume: pd.Series) -> pd.Series:
         """Calculate Volume Weighted Average Price (VWAP)."""
         typical_price = (high + low + close) / 3
-        cumulative_tp_vol = (typical_price * volume).cumsum()
-        cumulative_vol = volume.cumsum()
-        vwap = cumulative_tp_vol / cumulative_vol
-        return vwap
+        cumulative_tp_vol = (typical_price * volume).groupby(typical_price.index.date).cumsum()
+        cumulative_vol = volume.groupby(volume.index.date).cumsum()
+        return cumulative_tp_vol / cumulative_vol
 
     def _calculate_stochastic(self, high: pd.Series, low: pd.Series,
                             close: pd.Series, k_period: int = 14,
@@ -135,28 +137,19 @@ class TechnicalIndicators(BaseFeatureCalculator):
     def _calculate_adx(self, high: pd.Series, low: pd.Series,
                       close: pd.Series, period: int = 14) -> dict:
         """Calculate Average Directional Index (ADX)."""
-        # Calculate True Range
         high_low = high - low
         high_close = abs(high - close.shift(1))
         low_close = abs(low - close.shift(1))
         tr = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
         atr = tr.rolling(window=period).mean()
-
-        # Calculate Plus and Minus Directional Movement
         up_move = high - high.shift(1)
         down_move = low.shift(1) - low
-
         plus_dm = np.where((up_move > down_move) & (up_move > 0), up_move, 0)
         minus_dm = np.where((down_move > up_move) & (down_move > 0), down_move, 0)
-
-        # Calculate Plus and Minus Directional Indicators
         plus_di = 100 * pd.Series(plus_dm).rolling(window=period).mean() / atr
         minus_di = 100 * pd.Series(minus_dm).rolling(window=period).mean() / atr
-
-        # Calculate ADX
         dx = 100 * abs(plus_di - minus_di) / (plus_di + minus_di)
         adx = dx.rolling(window=period).mean()
-
         return {
             'adx': adx,
             'plus_di': plus_di,
