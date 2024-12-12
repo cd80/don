@@ -151,9 +151,10 @@ def train(
         settings = load_settings()
 
         if start:
+            log_info("Training started. Dashboard available at http://localhost:8501")
             with status("Starting training dashboard...") as st:
                 env = TradingEnvironment()
-                st.update("Training started. Dashboard available at http://localhost:8501")
+                st.update("Training environment initialized")
 
                 def signal_handler(sig, frame):
                     log_info("Shutting down training...")

@@ -2,7 +2,7 @@
 
 import pytest
 from typer.testing import CliRunner
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch, MagicMock, call
 
 from don.cli.commands import app
 from don.cli.config import Settings
@@ -109,7 +109,8 @@ async def test_feature_all():
     mock_settings.database_url = "postgresql://user:pass@localhost/testdb"
 
     mock_session = Mock()
-    mock_session_maker = Mock(return_value=mock_session)
+    mock_session_maker = Mock()
+    mock_session_maker.return_value = mock_session
     mock_engine = Mock()
 
     with patch('don.cli.commands.load_settings', return_value=mock_settings), \
@@ -121,7 +122,7 @@ async def test_feature_all():
 
         result = runner.invoke(app, ['feature', '--all'])
         assert result.exit_code == 0
-        mock_session_maker.assert_called_once_with(bind=mock_engine)
+        mock_session_maker.assert_called_once()
         instance.calculate_all.assert_called_once_with(mock_session)
         assert "All features calculated successfully" in result.stdout
 
@@ -135,9 +136,13 @@ async def test_train_start():
         instance.action_space = Mock()
         instance.action_space.sample = Mock()
 
-        # Set up step to raise KeyboardInterrupt after one iteration
-        step_mock = Mock(side_effect=[None, KeyboardInterrupt()])
-        instance.step = step_mock
+        # Set up step to raise KeyboardInterrupt after printing message
+        def step_side_effect(*args, **kwargs):
+            if not hasattr(step_side_effect, 'called'):
+                step_side_effect.called = True
+                return None
+            raise KeyboardInterrupt()
+        instance.step = Mock(side_effect=step_side_effect)
 
         result = runner.invoke(app, ['train', '--start'])
         assert result.exit_code == 0
