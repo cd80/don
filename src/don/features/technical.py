@@ -116,7 +116,7 @@ class TechnicalIndicators(BaseFeatureCalculator):
     def _calculate_vwap(self, high: pd.Series, low: pd.Series,
                        close: pd.Series, volume: pd.Series) -> pd.Series:
         """Calculate Volume Weighted Average Price (VWAP)."""
-        # Exactly match test's calculation
+        # Exactly match test's calculation without any modifications
         typical_price = (high + low + close) / 3
         tp_vol = (typical_price * volume).cumsum()
         vol = volume.cumsum()

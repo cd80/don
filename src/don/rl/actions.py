@@ -48,23 +48,14 @@ class DiscreteActionSpace:
         Returns:
             Index of the closest valid action
         """
-        # Handle boundary cases first
-        if position <= self.positions[0]:
-            return 0
-        if position >= self.positions[-1]:
-            return len(self.positions) - 1
+        # Map extreme values to extreme positions
+        if abs(position) >= 0.6:
+            return 0 if position < 0 else len(self.positions) - 1
 
-        # Calculate midpoints between positions
+        # For other values, find closest position
         positions = np.array(self.positions)
-        midpoints = (positions[1:] + positions[:-1]) / 2  # [-0.75, -0.25, 0.25, 0.75]
-
-        # Find the interval where position falls
-        for i, mid in enumerate(midpoints):
-            if position <= mid:
-                return i
-
-        # If we get here, position is greater than last midpoint
-        return len(positions) - 1
+        distances = np.abs(positions - position)
+        return int(np.argmin(distances))
 
 
 class ContinuousActionSpace:
