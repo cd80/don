@@ -134,6 +134,7 @@ def test_error_handling(mock_client_class):
     error_text = '{"code":-2015,"msg":"Invalid API-key, IP, or permissions for action."}'
     mock_response = Mock(status_code=401)
     mock_client = Mock(spec=Client)
+    mock_client.tld = 'com'  # Required for BinanceSocketManager
     mock_client.ping.side_effect = BinanceAPIException(
         mock_response,  # response must be first
         401,  # status_code second

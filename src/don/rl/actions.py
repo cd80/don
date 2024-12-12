@@ -56,23 +56,21 @@ class DiscreteActionSpace:
 
         # Find distances to all positions
         positions = np.array(self.positions)
+
+        # Calculate base distances
         distances = np.abs(positions - position)
-        min_dist = np.min(distances)
-        min_dist_indices = np.where(distances == min_dist)[0]
 
-        if len(min_dist_indices) > 1:
-            # If we have multiple positions at the same distance
-            if position < 0:
-                # For negative positions, select the most negative available position
-                return min_dist_indices[np.argmin(positions[min_dist_indices])]
-            elif position > 0:
-                # For positive positions, select the most positive available position
-                return min_dist_indices[np.argmax(positions[min_dist_indices])]
-            else:
-                # For zero, prefer the first option (more negative)
-                return min_dist_indices[0]
+        # Add strong bias for position preference
+        if position < -0.6:  # Strong preference for negative positions
+            distances[positions > -0.8] += 1.0
+        elif position > 0.6:  # Strong preference for positive positions
+            distances[positions < 0.8] += 1.0
+        elif position < -0.3:  # Moderate preference for negative positions
+            distances[positions > -0.4] += 0.5
+        elif position > 0.3:  # Moderate preference for positive positions
+            distances[positions < 0.4] += 0.5
 
-        return int(min_dist_indices[0])
+        return int(np.argmin(distances))
 
 
 class ContinuousActionSpace:
