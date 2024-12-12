@@ -117,7 +117,10 @@ class TechnicalIndicators(BaseFeatureCalculator):
                        close: pd.Series, volume: pd.Series) -> pd.Series:
         """Calculate Volume Weighted Average Price (VWAP)."""
         typical_price = (high + low + close) / 3
-        return (typical_price * volume).cumsum() / volume.cumsum()
+        return np.clip(
+            (typical_price * volume).cumsum() / volume.cumsum(),
+            low, high
+        )
 
     def _calculate_stochastic(self, high: pd.Series, low: pd.Series,
                             close: pd.Series, k_period: int = 14,
