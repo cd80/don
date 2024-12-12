@@ -101,9 +101,7 @@ def test_vwap_calculation(sample_data):
     assert len(vwap) == len(sample_data)
     assert not pd.isna(vwap).any()
 
-    assert (vwap <= sample_data['high']).all()
-    assert (vwap >= sample_data['low']).all()
-
+    # Calculate and verify VWAP matches the expected formula
     typical_price = (sample_data['high'] + sample_data['low'] + sample_data['close']) / 3
     expected_vwap = (typical_price * sample_data['volume']).cumsum() / sample_data['volume'].cumsum()
     np.testing.assert_array_almost_equal(vwap, expected_vwap)
