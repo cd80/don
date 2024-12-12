@@ -135,8 +135,7 @@ def test_error_handling(mock_client_class):
     mock_client.ping.side_effect = BinanceAPIException(
         status_code=401,
         response=Mock(status_code=401),
-        error_code="Invalid API key",
-        error_message="Invalid API key"
+        message="Invalid API key"
     )
     mock_client_class.return_value = mock_client
 
