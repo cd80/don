@@ -62,7 +62,12 @@ class DiscreteActionSpace:
         min_dist = np.min(distances)
         min_dist_indices = np.where(distances == min_dist)[0]
 
-        # If multiple positions have the same distance, prefer the lower index
+        # If multiple positions have the same distance, prefer the lower position
+        if len(min_dist_indices) > 1:
+            if position < 0:
+                return min_dist_indices[0]
+            else:
+                return min_dist_indices[-1]
         return int(min_dist_indices[0])
 
 

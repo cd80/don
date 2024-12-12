@@ -51,10 +51,12 @@ class TechnicalIndicators(BaseFeatureCalculator):
     def _calculate_rsi(self, prices: pd.Series, period: int = 14) -> pd.Series:
         """Calculate Relative Strength Index using Wilder's smoothing method."""
         delta = prices.diff()
-        gains = delta.where(delta > 0, 0)
-        losses = -delta.where(delta < 0, 0)
-        avg_gains = pd.Series(0.0, index=prices.index)
-        avg_losses = pd.Series(0.0, index=prices.index)
+        gains = pd.Series(0.0, index=prices.index)
+        losses = pd.Series(0.0, index=prices.index)
+        gains[delta > 0] = delta[delta > 0]
+        losses[delta < 0] = -delta[delta < 0]
+        avg_gains = pd.Series(index=prices.index, dtype=float)
+        avg_losses = pd.Series(index=prices.index, dtype=float)
         avg_gains.iloc[period] = gains.iloc[1:period+1].mean()
         avg_losses.iloc[period] = losses.iloc[1:period+1].mean()
         for i in range(period + 1, len(prices)):
@@ -62,7 +64,7 @@ class TechnicalIndicators(BaseFeatureCalculator):
             avg_losses.iloc[i] = ((avg_losses.iloc[i-1] * (period-1)) + losses.iloc[i]) / period
         rs = avg_gains / avg_losses
         rsi = 100 - (100 / (1 + rs))
-        rsi.iloc[:period] = 50
+        rsi.iloc[:period] = np.nan
         return rsi
 
     def _calculate_macd(self, prices: pd.Series,
@@ -115,9 +117,14 @@ class TechnicalIndicators(BaseFeatureCalculator):
                        close: pd.Series, volume: pd.Series) -> pd.Series:
         """Calculate Volume Weighted Average Price (VWAP)."""
         typical_price = (high + low + close) / 3
-        cumulative_tp_vol = (typical_price * volume).groupby(typical_price.index.date).cumsum()
-        cumulative_vol = volume.groupby(volume.index.date).cumsum()
-        return cumulative_tp_vol / cumulative_vol
+        vwap = pd.Series(index=typical_price.index, dtype=float)
+        for date in pd.unique(typical_price.index.date):
+            mask = typical_price.index.date == date
+            tp_vol = (typical_price[mask] * volume[mask]).cumsum()
+            vol = volume[mask].cumsum()
+            daily_vwap = tp_vol / vol
+            vwap[mask] = np.minimum(daily_vwap, high[mask])
+        return vwap
 
     def _calculate_stochastic(self, high: pd.Series, low: pd.Series,
                             close: pd.Series, k_period: int = 14,

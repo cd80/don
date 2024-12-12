@@ -7,7 +7,7 @@ from don.rl.rewards import PnLReward, SharpeReward
 
 @pytest.fixture
 def mock_market_data():
-    dates = pd.date_range(start='2023-01-01', periods=200, freq='1H')
+    dates = pd.date_range(start='2023-01-01', periods=200, freq='1h')
     data = pd.DataFrame({
         'close': np.linspace(100, 200, 200) + np.random.normal(0, 5, 200),
         'volume': np.random.uniform(1000, 2000, 200),
