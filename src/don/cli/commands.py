@@ -16,7 +16,7 @@ from typing import Optional
 import typer
 from rich.progress import Progress, track
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 from .config import Settings, load_settings
 from .logging import (console, get_progress, init_logging, log_error, log_info,
@@ -24,6 +24,7 @@ from .logging import (console, get_progress, init_logging, log_error, log_info,
 from ..data.binance import BinanceDataCollector
 from ..database.models import Base
 from ..features.technical import TechnicalIndicators
+from ..rl.env import TradingEnvironment
 
 # Create typer app
 app = typer.Typer(help="Don trading framework CLI")
@@ -42,11 +43,13 @@ def setup(
             settings = load_settings()
             st.update("Checking configuration completeness...")
             if not settings.check_completeness():
+                log_error("Configuration validation failed")
                 raise typer.Exit(1)
 
             if all:
                 st.update("Testing database connection...")
                 if not settings.check_database_connection():
+                    log_error("Database connection failed")
                     raise typer.Exit(1)
 
                 st.update("Initializing database tables...")
@@ -55,6 +58,8 @@ def setup(
 
         log_success("Setup completed successfully!")
 
+    except typer.Exit:
+        raise
     except Exception as e:
         log_error(f"Setup failed: {str(e)}")
         raise typer.Exit(1)
@@ -80,14 +85,19 @@ def collect(
 
         if action == "start":
             log_info("Starting data collection...")
-            asyncio.run(collector.start())
+            collector.start()
+            log_success("Data collection started successfully")
         elif action == "stop":
             log_info("Stopping data collection...")
-            asyncio.run(collector.stop())
+            collector.stop()
+            log_success("Data collection stopped successfully")
         else:  # resume
             log_info("Resuming data collection...")
-            asyncio.run(collector.resume())
+            collector.resume()
+            log_success("Data collection resumed successfully")
 
+    except typer.Exit:
+        raise
     except Exception as e:
         log_error(f"Data collection {action} failed: {str(e)}")
         raise typer.Exit(1)
@@ -101,6 +111,7 @@ def feature(
     )
 ) -> None:
     """Calculate and manage technical indicators."""
+    session = None
     try:
         settings = load_settings()
         engine = create_engine(str(settings.database_url))
@@ -118,11 +129,14 @@ def feature(
                 log_warning("Please specify --all to calculate all features")
                 raise typer.Exit(1)
 
+    except typer.Exit:
+        raise
     except Exception as e:
         log_error(f"Feature calculation failed: {str(e)}")
         raise typer.Exit(1)
     finally:
-        session.close()
+        if session:
+            session.close()
 
 @app.command()
 def train(
@@ -138,10 +152,7 @@ def train(
 
         if start:
             with status("Starting training dashboard...") as st:
-                from ..rl.env import TradingEnvironment
-
                 env = TradingEnvironment()
-
                 st.update("Training started. Dashboard available at http://localhost:8501")
 
                 def signal_handler(sig, frame):
@@ -160,6 +171,8 @@ def train(
             log_warning("Please use --start to begin training")
             raise typer.Exit(1)
 
+    except typer.Exit:
+        raise
     except Exception as e:
         log_error(f"Training failed: {str(e)}")
         raise typer.Exit(1)
