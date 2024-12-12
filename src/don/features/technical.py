@@ -190,21 +190,28 @@ class TechnicalIndicators(BaseFeatureCalculator):
             empty = pd.Series(np.nan, index=high.index)
             return {'adx': empty, 'plus_di': empty, 'minus_di': empty}
 
+        # Calculate True Range
         high_low = high - low
-        high_close = abs(high - close.shift(1))
-        low_close = abs(low - close.shift(1))
-        tr = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
+        high_close = (high - close.shift(1)).abs()
+        low_close = (low - close.shift(1)).abs()
+        tr = pd.DataFrame({'hl': high_low, 'hc': high_close, 'lc': low_close}).max(axis=1)
         atr = tr.ewm(span=period, min_periods=period).mean()
 
+        # Calculate DM
         up_move = high - high.shift(1)
         down_move = low.shift(1) - low
-        plus_dm = np.where((up_move > down_move) & (up_move > 0), up_move, 0)
-        minus_dm = np.where((down_move > up_move) & (down_move > 0), down_move, 0)
+        plus_dm = pd.Series(0, index=high.index)
+        minus_dm = pd.Series(0, index=high.index)
 
-        plus_di = pd.Series(plus_dm).ewm(span=period, min_periods=period).mean() / atr * 100
-        minus_di = pd.Series(minus_dm).ewm(span=period, min_periods=period).mean() / atr * 100
+        plus_dm[((up_move > down_move) & (up_move > 0))] = up_move
+        minus_dm[((down_move > up_move) & (down_move > 0))] = down_move
 
-        dx = abs(plus_di - minus_di) / (plus_di + minus_di) * 100
+        # Calculate DI
+        plus_di = 100 * plus_dm.ewm(span=period, min_periods=period).mean() / atr
+        minus_di = 100 * minus_dm.ewm(span=period, min_periods=period).mean() / atr
+
+        # Calculate ADX
+        dx = 100 * abs(plus_di - minus_di) / (plus_di + minus_di)
         adx = dx.ewm(span=period, min_periods=period).mean()
 
         return {
